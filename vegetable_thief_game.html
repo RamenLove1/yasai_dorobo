@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>野菜泥棒ゲーム</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #98FB98);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-container {
+            max-width: 1000px;
+            width: 100%;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d9534f;
+            margin-bottom: 10px;
+        }
+
+        .needed-items {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .needed-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            font-weight: bold;
+        }
+
+        .needed-item.completed {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .shops-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .shop-area {
+            background: #8B4513;
+            padding: 20px;
+            border-radius: 15px;
+            position: relative;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .shop-title {
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.3);
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .police-container {
+            position: absolute;
+            top: -30px;
+            right: 20px;
+            font-size: 50px;
+            transition: transform 0.3s ease;
+            cursor: default;
+        }
+
+        .police.looking-away {
+            transform: scaleX(-1);
+        }
+
+        .police-status {
+            position: absolute;
+            top: -5px;
+            right: 70px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .police-status.watching {
+            background: #ffcccc;
+            color: #d9534f;
+        }
+
+        .police-status.not-watching {
+            background: #ccffcc;
+            color: #28a745;
+        }
+
+        .vegetables-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 15px;
+            margin-top: 35px;
+        }
+
+        .vegetable {
+            background: #f8f9fa;
+            border: 3px solid #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 32px;
+            position: relative;
+        }
+
+        .vegetable:hover {
+            transform: scale(1.05);
+            border-color: #007bff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .vegetable.stolen {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background: #e9ecef;
+        }
+
+        .vegetable-label {
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .game-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .restart-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .restart-btn:hover {
+            background: #0056b3;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .shops-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .police-container {
+                font-size: 40px;
+            }
+            
+            .police-status {
+                right: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="instructions">
+            <strong>遊び方：</strong> 2つの八百屋があります。各八百屋の警官が見ていないときに野菜をクリックして盗もう！<strong>注意：一部の食材は片方の八百屋でしか手に入りません！</strong>必要な野菜を集めればクリア。警官に見つかったらゲームオーバー。制限時間は60秒！
+        </div>
+
+        <div class="header">
+            <div class="timer" id="timer">60</div>
+            <div class="needed-items">
+                <div class="needed-item" id="potato-need">🥔 ジャガイモ x1</div>
+                <div class="needed-item" id="carrot-need">🥕 ニンジン x2</div>
+                <div class="needed-item" id="onion-need">🧅 タマネギ x1</div>
+            </div>
+        </div>
+
+        <div class="shops-container">
+            <!-- 八百屋A -->
+            <div class="shop-area">
+                <div class="shop-title">八百屋A</div>
+                <div class="police-container">
+                    <div class="police" id="police-a">👮</div>
+                    <div class="police-status watching" id="police-status-a">警戒中</div>
+                </div>
+
+                <div class="vegetables-container">
+                    <div class="vegetable" data-shop="a" data-type="potato" onclick="stealVegetable('potato', this, 'a')">
+                        🥔
+                        <div class="vegetable-label">ジャガイモ</div>
+                    </div>
+                    <div class="vegetable" data-shop="a" data-type="carrot" onclick="stealVegetable('carrot', this, 'a')">
+                        🥕
+                        <div class="vegetable-label">ニンジン</div>
+                    </div>
+                    <div class="vegetable" data-shop="a" data-type="tomato" onclick="stealVegetable('tomato', this, 'a')">
+                        🍅
+                        <div class="vegetable-label">トマト</div>
+                    </div>
+                    <div class="vegetable" data-shop="a" data-type="lettuce" onclick="stealVegetable('lettuce', this, 'a')">
+                        🥬
+                        <div class="vegetable-label">レタス</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 八百屋B -->
+            <div class="shop-area">
+                <div class="shop-title">八百屋B</div>
+                <div class="police-container">
+                    <div class="police" id="police-b">👮</div>
+                    <div class="police-status watching" id="police-status-b">警戒中</div>
+                </div>
+
+                <div class="vegetables-container">
+                    <div class="vegetable" data-shop="b" data-type="carrot" onclick="stealVegetable('carrot', this, 'b')">
+                        🥕
+                        <div class="vegetable-label">ニンジン</div>
+                    </div>
+                    <div class="vegetable" data-shop="b" data-type="onion" onclick="stealVegetable('onion', this, 'b')">
+                        🧅
+                        <div class="vegetable-label">タマネギ</div>
+                    </div>
+                    <div class="vegetable" data-shop="b" data-type="tomato" onclick="stealVegetable('tomato', this, 'b')">
+                        🍅
+                        <div class="vegetable-label">トマト</div>
+                    </div>
+                    <div class="vegetable" data-shop="b" data-type="lettuce" onclick="stealVegetable('lettuce', this, 'b')">
+                        🥬
+                        <div class="vegetable-label">レタス</div>
+                    </div>
+                    <div class="vegetable" data-shop="b" data-type="cabbage" onclick="stealVegetable('cabbage', this, 'b')">
+                        🥒
+                        <div class="vegetable-label">キュウリ</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-message" id="game-message">
+        <div id="message-text"></div>
+        <button class="restart-btn" onclick="restartGame()">もう一度プレイ</button>
+    </div>
+
+    <script>
+        let gameState = {
+            timeLeft: 60,
+            policeWatching: {
+                a: true,
+                b: true
+            },
+            gameRunning: true,
+            stolen: {
+                potato: 0,
+                carrot: 0,
+                onion: 0,
+                tomato: 0,
+                lettuce: 0,
+                cabbage: 0
+            },
+            needed: {
+                potato: 1,
+                carrot: 2,
+                onion: 1
+            }
+        };
+
+        let timers = {
+            gameTimer: null,
+            policeTimers: {
+                a: null,
+                b: null
+            }
+        };
+
+        function initGame() {
+            gameState = {
+                timeLeft: 60,
+                policeWatching: {
+                    a: true,
+                    b: true
+                },
+                gameRunning: true,
+                stolen: {
+                    potato: 0,
+                    carrot: 0,
+                    onion: 0,
+                    tomato: 0,
+                    lettuce: 0,
+                    cabbage: 0
+                },
+                needed: {
+                    potato: 1,
+                    carrot: 2,
+                    onion: 1
+                }
+            };
+
+            // リセット表示
+            document.querySelectorAll('.vegetable').forEach(veg => {
+                veg.classList.remove('stolen');
+            });
+            document.querySelectorAll('.needed-item').forEach(item => {
+                item.classList.remove('completed');
+            });
+            document.getElementById('game-message').style.display = 'none';
+            
+            // 既存のタイマーをクリア
+            clearAllTimers();
+            
+            updateDisplay();
+            startGameTimer();
+            schedulePoliceAction('a');
+            schedulePoliceAction('b');
+        }
+
+        function clearAllTimers() {
+            if (timers.gameTimer) clearInterval(timers.gameTimer);
+            if (timers.policeTimers.a) clearTimeout(timers.policeTimers.a);
+            if (timers.policeTimers.b) clearTimeout(timers.policeTimers.b);
+        }
+
+        function startGameTimer() {
+            timers.gameTimer = setInterval(() => {
+                gameState.timeLeft--;
+                updateDisplay();
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame('時間切れ！ゲームオーバー');
+                }
+            }, 1000);
+        }
+
+        function schedulePoliceAction(shop) {
+            if (!gameState.gameRunning) return;
+
+            const lookAwayTime = Math.random() * 4000 + 1000; // 1-5秒
+            
+            timers.policeTimers[shop] = setTimeout(() => {
+                if (!gameState.gameRunning) return;
+                
+                // 警官が後ろを向く
+                gameState.policeWatching[shop] = false;
+                updatePoliceDisplay(shop);
+                
+                const lookBackTime = Math.random() * 2000 + 1000; // 1-3秒
+                
+                timers.policeTimers[shop] = setTimeout(() => {
+                    if (!gameState.gameRunning) return;
+                    
+                    // 警官がこちらを向く
+                    gameState.policeWatching[shop] = true;
+                    updatePoliceDisplay(shop);
+                    schedulePoliceAction(shop); // 次のアクションをスケジュール
+                }, lookBackTime);
+            }, lookAwayTime);
+        }
+
+        function updatePoliceDisplay(shop) {
+            const police = document.getElementById('police-' + shop);
+            const status = document.getElementById('police-status-' + shop);
+            
+            if (gameState.policeWatching[shop]) {
+                police.classList.remove('looking-away');
+                status.textContent = '警戒中';
+                status.className = 'police-status watching';
+            } else {
+                police.classList.add('looking-away');
+                status.textContent = '隙あり!';
+                status.className = 'police-status not-watching';
+            }
+        }
+
+        function stealVegetable(type, element, shop) {
+            if (!gameState.gameRunning || element.classList.contains('stolen')) {
+                return;
+            }
+
+            if (gameState.policeWatching[shop]) {
+                endGame(`八百屋${shop.toUpperCase()}の警官に見つかった！ゲームオーバー`);
+                return;
+            }
+
+            // 野菜を盗む
+            element.classList.add('stolen');
+            gameState.stolen[type]++;
+            
+            updateDisplay();
+            checkWinCondition();
+        }
+
+        function updateDisplay() {
+            // タイマー更新
+            document.getElementById('timer').textContent = gameState.timeLeft;
+            
+            // 必要アイテム表示更新
+            Object.keys(gameState.needed).forEach(type => {
+                const element = document.getElementById(type + '-need');
+                const needed = gameState.needed[type];
+                const stolen = gameState.stolen[type];
+                
+                if (stolen >= needed) {
+                    element.classList.add('completed');
+                    if (type === 'potato') element.textContent = '🥔 ジャガイモ ✓';
+                    if (type === 'carrot') element.textContent = '🥕 ニンジン ✓';
+                    if (type === 'onion') element.textContent = '🧅 タマネギ ✓';
+                } else {
+                    element.classList.remove('completed');
+                    if (type === 'potato') element.textContent = `🥔 ジャガイモ x${needed - stolen}`;
+                    if (type === 'carrot') element.textContent = `🥕 ニンジン x${needed - stolen}`;
+                    if (type === 'onion') element.textContent = `🧅 タマネギ x${needed - stolen}`;
+                }
+            });
+        }
+
+        function checkWinCondition() {
+            const allCollected = Object.keys(gameState.needed).every(type => 
+                gameState.stolen[type] >= gameState.needed[type]
+            );
+            
+            if (allCollected) {
+                endGame('おめでとう！全ての食材を集めました！');
+            }
+        }
+
+        function endGame(message) {
+            gameState.gameRunning = false;
+            clearAllTimers();
+            
+            document.getElementById('message-text').textContent = message;
+            document.getElementById('game-message').style.display = 'block';
+        }
+
+        function restartGame() {
+            clearAllTimers();
+            initGame();
+        }
+
+        // ゲーム開始
+        initGame();
+    </script>
+</body>
+</html>
