@@ -20,6 +20,7 @@
             max-width: 1000px;
             width: 100%;
             position: relative;
+            margin-bottom: 50px;
         }
 
         .header {
@@ -197,18 +198,108 @@
             line-height: 1.5;
         }
 
+        .sidewalk-area {
+            background: #696969;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+            position: relative;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            height: 120px;
+            overflow: visible;
+        }
+
+        .sidewalk-title {
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.3);
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .sidewalk-police-container {
+            position: absolute;
+            top: -30px;
+            right: 20px;
+            font-size: 50px;
+            transition: transform 0.3s ease;
+            cursor: default;
+        }
+
+        .sidewalk-police.looking-away {
+            transform: scaleX(-1);
+        }
+
+        .sidewalk-police-status {
+            position: absolute;
+            top: -5px;
+            right: 70px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            white-space: nowrap;
+            z-index: 100;
+        }
+
+        .sidewalk-police-status.watching {
+            background: #ffcccc;
+            color: #d9534f;
+        }
+
+        .sidewalk-police-status.not-watching {
+            background: #ccffcc;
+            color: #28a745;
+        }
+
+        .pedestrian {
+            position: absolute;
+            font-size: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .pedestrian:hover {
+            transform: scale(1.1);
+        }
+
+        .pedestrian.stolen {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .pedestrian-vegetable {
+            font-size: 20px;
+        }
+
         @media (max-width: 768px) {
             .shops-container {
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
             
-            .police-container {
+            .police-container, .sidewalk-police-container {
                 font-size: 40px;
             }
             
-            .police-status {
+            .police-status, .sidewalk-police-status {
                 right: 60px;
+            }
+            
+            .pedestrian {
+                font-size: 25px;
+            }
+            
+            .pedestrian-vegetable {
+                font-size: 18px;
             }
         }
     </style>
@@ -216,15 +307,15 @@
 <body>
     <div class="game-container">
         <div class="instructions">
-            <strong>遊び方：</strong> 2つの八百屋があります。各八百屋の警官が見ていないときに野菜をクリックして盗もう！<strong>注意：一部の食材は片方の八百屋でしか手に入りません！</strong>必要な野菜を集めればクリア。警官に見つかったらゲームオーバー。制限時間は60秒！
+            <strong>遊び方：</strong> 2つの八百屋と歩道があります。各警官が見ていないときに野菜をクリックして盗もう！<strong>注意：一部の食材は片方の八百屋でしか手に入りません！歩道の通行人からも野菜を盗めます！</strong>必要な野菜を集めればクリア。警官に見つかったらゲームオーバー。制限時間は60秒！
         </div>
 
         <div class="header">
             <div class="timer" id="timer">60</div>
             <div class="needed-items">
-                <div class="needed-item" id="potato-need">🥔 ジャガイモ x1</div>
-                <div class="needed-item" id="carrot-need">🥕 ニンジン x2</div>
-                <div class="needed-item" id="onion-need">🧅 タマネギ x1</div>
+                <div class="needed-item" id="potato-need">🥔 ジャガイモ x2</div>
+                <div class="needed-item" id="carrot-need">🥕 ニンジン x4</div>
+                <div class="needed-item" id="onion-need">🧅 タマネギ x2</div>
             </div>
         </div>
 
@@ -282,12 +373,18 @@
                         🥬
                         <div class="vegetable-label">レタス</div>
                     </div>
-                    <div class="vegetable" data-shop="b" data-type="cabbage" onclick="stealVegetable('cabbage', this, 'b')">
-                        🥒
-                        <div class="vegetable-label">キュウリ</div>
-                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- 歩道エリア -->
+        <div class="sidewalk-area">
+            <div class="sidewalk-title">歩道</div>
+            <div class="sidewalk-police-container">
+                <div class="sidewalk-police" id="police-sidewalk">👮</div>
+                <div class="sidewalk-police-status watching" id="police-status-sidewalk">警戒中</div>
+            </div>
+            <div id="pedestrians-container"></div>
         </div>
     </div>
 
@@ -301,7 +398,8 @@
             timeLeft: 60,
             policeWatching: {
                 a: true,
-                b: true
+                b: true,
+                sidewalk: true
             },
             gameRunning: true,
             stolen: {
@@ -309,22 +407,24 @@
                 carrot: 0,
                 onion: 0,
                 tomato: 0,
-                lettuce: 0,
-                cabbage: 0
+                lettuce: 0
             },
             needed: {
-                potato: 1,
-                carrot: 2,
-                onion: 1
-            }
+                potato: 2,
+                carrot: 4,
+                onion: 2
+            },
+            pedestrians: []
         };
 
         let timers = {
             gameTimer: null,
             policeTimers: {
                 a: null,
-                b: null
-            }
+                b: null,
+                sidewalk: null
+            },
+            pedestrianTimer: null
         };
 
         function initGame() {
@@ -332,7 +432,8 @@
                 timeLeft: 60,
                 policeWatching: {
                     a: true,
-                    b: true
+                    b: true,
+                    sidewalk: true
                 },
                 gameRunning: true,
                 stolen: {
@@ -340,14 +441,14 @@
                     carrot: 0,
                     onion: 0,
                     tomato: 0,
-                    lettuce: 0,
-                    cabbage: 0
+                    lettuce: 0
                 },
                 needed: {
-                    potato: 1,
-                    carrot: 2,
-                    onion: 1
-                }
+                    potato: 2,
+                    carrot: 4,
+                    onion: 2
+                },
+                pedestrians: []
             };
 
             // リセット表示
@@ -358,6 +459,7 @@
                 item.classList.remove('completed');
             });
             document.getElementById('game-message').style.display = 'none';
+            document.getElementById('pedestrians-container').innerHTML = '';
             
             // 既存のタイマーをクリア
             clearAllTimers();
@@ -366,12 +468,16 @@
             startGameTimer();
             schedulePoliceAction('a');
             schedulePoliceAction('b');
+            schedulePoliceAction('sidewalk');
+            startPedestrianSpawning();
         }
 
         function clearAllTimers() {
             if (timers.gameTimer) clearInterval(timers.gameTimer);
             if (timers.policeTimers.a) clearTimeout(timers.policeTimers.a);
             if (timers.policeTimers.b) clearTimeout(timers.policeTimers.b);
+            if (timers.policeTimers.sidewalk) clearTimeout(timers.policeTimers.sidewalk);
+            if (timers.pedestrianTimer) clearInterval(timers.pedestrianTimer);
         }
 
         function startGameTimer() {
@@ -417,11 +523,11 @@
             if (gameState.policeWatching[shop]) {
                 police.classList.remove('looking-away');
                 status.textContent = '警戒中';
-                status.className = 'police-status watching';
+                status.className = shop === 'sidewalk' ? 'sidewalk-police-status watching' : 'police-status watching';
             } else {
                 police.classList.add('looking-away');
                 status.textContent = '隙あり!';
-                status.className = 'police-status not-watching';
+                status.className = shop === 'sidewalk' ? 'sidewalk-police-status not-watching' : 'police-status not-watching';
             }
         }
 
@@ -431,7 +537,8 @@
             }
 
             if (gameState.policeWatching[shop]) {
-                endGame(`八百屋${shop.toUpperCase()}の警官に見つかった！ゲームオーバー`);
+                const shopName = shop === 'a' ? 'A' : 'B';
+                endGame(`八百屋${shopName}の警官に見つかった！ゲームオーバー`);
                 return;
             }
 
@@ -475,6 +582,93 @@
             if (allCollected) {
                 endGame('おめでとう！全ての食材を集めました！');
             }
+        }
+
+        function startPedestrianSpawning() {
+            timers.pedestrianTimer = setInterval(() => {
+                if (!gameState.gameRunning) return;
+                createPedestrian();
+            }, 3000); // 3秒間隔で通行人を生成
+        }
+
+        function createPedestrian() {
+            const vegetables = ['🥔', '🥕', '🧅', '🍅', '🥬'];
+            const vegetableNames = ['potato', 'carrot', 'onion', 'tomato', 'lettuce'];
+            const randomIndex = Math.floor(Math.random() * vegetables.length);
+            
+            const pedestrian = {
+                id: Date.now(),
+                vegetable: vegetables[randomIndex],
+                vegetableType: vegetableNames[randomIndex],
+                position: -50,
+                stolen: false
+            };
+            
+            gameState.pedestrians.push(pedestrian);
+            
+            const pedestrianElement = document.createElement('div');
+            pedestrianElement.className = 'pedestrian';
+            pedestrianElement.id = 'pedestrian-' + pedestrian.id;
+            pedestrianElement.style.left = pedestrian.position + 'px';
+            pedestrianElement.innerHTML = `
+                🚶‍♂️
+                <span class="pedestrian-vegetable">${pedestrian.vegetable}</span>
+            `;
+            pedestrianElement.onclick = () => stealFromPedestrian(pedestrian.id);
+            
+            document.getElementById('pedestrians-container').appendChild(pedestrianElement);
+            
+            movePedestrian(pedestrian.id);
+        }
+
+        function movePedestrian(pedestrianId) {
+            const moveInterval = setInterval(() => {
+                if (!gameState.gameRunning) {
+                    clearInterval(moveInterval);
+                    return;
+                }
+                
+                const pedestrian = gameState.pedestrians.find(p => p.id === pedestrianId);
+                const element = document.getElementById('pedestrian-' + pedestrianId);
+                
+                if (!pedestrian || !element) {
+                    clearInterval(moveInterval);
+                    return;
+                }
+                
+                pedestrian.position += 2;
+                element.style.left = pedestrian.position + 'px';
+                
+                // 画面外に出たら削除
+                if (pedestrian.position > window.innerWidth) {
+                    clearInterval(moveInterval);
+                    if (element) element.remove();
+                    gameState.pedestrians = gameState.pedestrians.filter(p => p.id !== pedestrianId);
+                }
+            }, 50);
+        }
+
+        function stealFromPedestrian(pedestrianId) {
+            if (!gameState.gameRunning) return;
+            
+            const pedestrian = gameState.pedestrians.find(p => p.id === pedestrianId);
+            if (!pedestrian || pedestrian.stolen) return;
+            
+            if (gameState.policeWatching.sidewalk) {
+                endGame('歩道の警官に見つかった！ゲームオーバー');
+                return;
+            }
+            
+            // 野菜を盗む
+            pedestrian.stolen = true;
+            const element = document.getElementById('pedestrian-' + pedestrianId);
+            if (element) {
+                element.classList.add('stolen');
+            }
+            
+            gameState.stolen[pedestrian.vegetableType]++;
+            updateDisplay();
+            checkWinCondition();
         }
 
         function endGame(message) {
