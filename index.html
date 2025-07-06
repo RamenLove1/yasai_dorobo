@@ -132,7 +132,7 @@
             height: 12px;
             background: black;
             border-radius: 50%;
-            transition: all 0.3s ease;
+            transition: all 0.5s ease;
         }
 
         .eye.closed {
@@ -276,7 +276,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(255, 0, 0, 0.9);
+            background: rgba(255, 140, 0, 0.95);
             color: white;
             padding: 30px;
             border-radius: 15px;
@@ -407,9 +407,8 @@
             </div>
 
             <div id="gameOver">
-                <div>ゲームオーバー！</div>
-                <div>見つかってしまいました</div>
-                <button onclick="restartGame()" style="margin-top: 15px; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background: #4CAF50; color: white;">もう一度</button>
+                <div id="gameOverMessage">見つかってしまいました！</div>
+                <div id="gameOverSubMessage">集めたアイテムが没収されます...</div>
             </div>
         </div>
 
@@ -617,15 +616,25 @@
                 if (!gameState.running) return;
                 gameState.timers.shopkeeper = setTimeout(() => {
                     if (!gameState.running) return;
+                    
+                    // 目を閉じるアニメーション開始と同時に安全状態に
                     gameState.shopkeeperWatching = false;
                     document.getElementById('shopkeeperEye1').classList.add('closed');
                     document.getElementById('shopkeeperEye2').classList.add('closed');
                     
                     gameState.timers.shopkeeper = setTimeout(() => {
                         if (!gameState.running) return;
-                        gameState.shopkeeperWatching = true;
+                        
+                        // 目を開けるアニメーション開始
                         document.getElementById('shopkeeperEye1').classList.remove('closed');
                         document.getElementById('shopkeeperEye2').classList.remove('closed');
+                        
+                        // アニメーション完了後（0.5秒後）に危険状態に
+                        setTimeout(() => {
+                            if (!gameState.running) return;
+                            gameState.shopkeeperWatching = true;
+                        }, 500); // CSSアニメーションの完了を待つ
+                        
                         blink();
                     }, Math.random() * 2000 + 1000);
                 }, Math.random() * 4000 + 1000);
@@ -691,15 +700,25 @@
                 if (!gameState.running || !pedestrian.parentNode) return;
                 setTimeout(() => {
                     if (!gameState.running || !pedestrian.parentNode) return;
+                    
+                    // 目を閉じるアニメーション開始と同時に安全状態に
                     pedestrian.watching = false;
                     pedestrian.eye1.classList.add('closed');
                     pedestrian.eye2.classList.add('closed');
                     
                     setTimeout(() => {
                         if (!gameState.running || !pedestrian.parentNode) return;
-                        pedestrian.watching = true;
+                        
+                        // 目を開けるアニメーション開始
                         pedestrian.eye1.classList.remove('closed');
                         pedestrian.eye2.classList.remove('closed');
+                        
+                        // アニメーション完了後（0.5秒後）に危険状態に
+                        setTimeout(() => {
+                            if (!gameState.running || !pedestrian.parentNode) return;
+                            pedestrian.watching = true;
+                        }, 500); // CSSアニメーションの完了を待つ
+                        
                         blink();
                     }, Math.random() * 2000 + 1000);
                 }, Math.random() * 4000 + 1000);
@@ -875,18 +894,47 @@
             showScreen('resultScreen');
         }
 
-        // ゲームオーバー
+        // ゲームオーバー（没収処理）
         function gameOver() {
             gameState.running = false;
             clearAllTimers();
             removeDragClone();
+            
+            // 現在のエリアで集めたアイテムを没収
+            const stage = stageData[gameState.currentStage];
+            gameState.allStolenItems[stage.key] = []; // そのエリアのアイテムをクリア
+            
+            // 泥棒袋の表示もクリア
+            document.getElementById('stolenItems').innerHTML = '';
+            
+            // 没収メッセージを表示
+            document.getElementById('gameOverMessage').textContent = '見つかってしまいました！';
+            document.getElementById('gameOverSubMessage').textContent = `${stage.name}エリアで集めたアイテムが没収されます...`;
             document.getElementById('gameOver').style.display = 'block';
+            
+            // 2秒後に次のエリアまたは結果画面へ
+            setTimeout(() => {
+                document.getElementById('gameOver').style.display = 'none';
+                
+                if (gameState.currentStage < 2) {
+                    // 次のエリアへ
+                    gameState.currentStage++;
+                    setupStage();
+                } else {
+                    // 最後のエリアの場合は結果画面へ
+                    showResults();
+                }
+            }, 2000);
         }
 
         // ゲーム再開
         function restartGame() {
             clearAllTimers();
             removeDragClone();
+            
+            // ゲームオーバー表示を非表示
+            document.getElementById('gameOver').style.display = 'none';
+            
             showScreen('startScreen');
         }
 
