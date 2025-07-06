@@ -364,6 +364,16 @@
             font-size: 14px;
             font-weight: bold;
         }
+
+        .alert-indicator {
+            background: rgba(220, 20, 60, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            margin-top: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -404,6 +414,7 @@
             <div id="gameUI">
                 <div>時間: <span id="timeLeft">20</span>秒</div>
                 <div class="stage-indicator" id="stageIndicator">八百屋 (1/3)</div>
+                <div class="alert-indicator" id="alertIndicator">警戒度: 0/20</div>
             </div>
 
             <div id="gameOver">
@@ -447,6 +458,7 @@
             running: false,
             timeLeft: 20,
             currentStage: 0, // 0: 八百屋, 1: スーパー, 2: コンビニ
+            alertLevel: 0, // 警戒度 (0-20)
             shopkeeperWatching: true,
             pedestrians: [],
             allStolenItems: {
@@ -480,16 +492,16 @@
                 name: 'スーパー',
                 title: 'スーパーエリア',
                 className: 'supermarket',
-                items: ['🍚', '🍛', '🥄', '🧈', '🧄', '🧂'],
-                pedestrianItems: ['🍚', '🍛', '🥄', '🧈', '🧄', '🧂'],
+                items: ['🍚', '🍛', '🥚', '🍗', '🧂', '🍯'],
+                pedestrianItems: ['🍚', '🍛', '🥚', '🍗', '🧂', '🍯'],
                 key: 'supermarket'
             },
             2: {
                 name: 'コンビニ',
                 title: 'コンビニエリア',
                 className: 'convenience',
-                items: ['💧', '🍫', '🍪', '🥤', '🍞', '🥛'],
-                pedestrianItems: ['💧', '🍫', '🍪', '🥤', '🍞', '🥛'],
+                items: ['🧴', '🍫', '🍪', '🍞', '🔋', '📖'],
+                pedestrianItems: ['🧴', '🍫', '🍪', '🍞', '🔋', '📖'],
                 key: 'convenience'
             }
         };
@@ -498,6 +510,7 @@
         function startGame() {
             showScreen('gameScreen');
             gameState.currentStage = 0;
+            gameState.alertLevel = 0; // 新しいゲーム開始時は警戒度リセット
             gameState.allStolenItems = { vegetable: [], supermarket: [], convenience: [] };
             setupStage();
         }
@@ -554,10 +567,11 @@
             }
         }
 
-        // ゲーム状態リセット
+        // ゲーム状態リセット（エリア切り替え時）
         function resetGameState() {
             gameState.running = true;
             gameState.timeLeft = 20;
+            // 警戒度はエリアをまたいで継続（リセットしない）
             gameState.shopkeeperWatching = true;
             gameState.pedestrians = [];
             gameState.dragData = { element: null, clone: null, startPos: { x: 0, y: 0 } };
@@ -568,6 +582,33 @@
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('shopkeeperEye1').classList.remove('closed');
             document.getElementById('shopkeeperEye2').classList.remove('closed');
+            
+            updateAlertLevelUI();
+        }
+
+        // 警戒度に応じた瞬きタイミングを計算
+        function getBlinkTimings() {
+            const alertRatio = Math.min(gameState.alertLevel / 20, 1); // 0~1の範囲
+            
+            // 目を閉じるまでの時間: 1~5秒 → 3~7秒
+            const closeMin = 1000 + (alertRatio * 2000); // 1000ms → 3000ms
+            const closeMax = 5000 + (alertRatio * 2000); // 5000ms → 7000ms
+            const closeTime = Math.random() * (closeMax - closeMin) + closeMin;
+            
+            // 目を開くまでの時間: 1~3秒 → 0.5~1秒
+            const openMin = 1000 - (alertRatio * 500); // 1000ms → 500ms
+            const openMax = 3000 - (alertRatio * 2000); // 3000ms → 1000ms
+            const openTime = Math.random() * (openMax - openMin) + openMin;
+            
+            return { closeTime, openTime };
+        }
+
+        // 警戒度UI更新
+        function updateAlertLevelUI() {
+            const alertIndicator = document.getElementById('alertIndicator');
+            if (alertIndicator) {
+                alertIndicator.textContent = `警戒度: ${gameState.alertLevel}/20`;
+            }
         }
 
         // 全タイマークリア
@@ -614,6 +655,9 @@
         function startShopkeeperBlinking() {
             function blink() {
                 if (!gameState.running) return;
+                
+                const timings = getBlinkTimings();
+                
                 gameState.timers.shopkeeper = setTimeout(() => {
                     if (!gameState.running) return;
                     
@@ -636,8 +680,8 @@
                         }, 500); // CSSアニメーションの完了を待つ
                         
                         blink();
-                    }, Math.random() * 2000 + 1000);
-                }, Math.random() * 4000 + 1000);
+                    }, timings.openTime);
+                }, timings.closeTime);
             }
             blink();
         }
@@ -669,8 +713,17 @@
                 pedestrian[id] = eye;
             });
 
-            const items = stage.pedestrianItems;
-            const item = items[Math.floor(Math.random() * items.length)];
+            // アイテム選択（スーパーエリアでは3%の確率でダイアモンド）
+            let item;
+            if (gameState.currentStage === 1 && Math.random() < 0.03) {
+                // スーパーエリアで3%の確率でダイアモンド
+                item = '💎';
+            } else {
+                // 通常のアイテム
+                const items = stage.pedestrianItems;
+                item = items[Math.floor(Math.random() * items.length)];
+            }
+            
             const itemElement = document.createElement('div');
             itemElement.className = 'pedestrian-item';
             itemElement.textContent = item;
@@ -698,6 +751,9 @@
         function startPedestrianBlinking(pedestrian) {
             function blink() {
                 if (!gameState.running || !pedestrian.parentNode) return;
+                
+                const timings = getBlinkTimings();
+                
                 setTimeout(() => {
                     if (!gameState.running || !pedestrian.parentNode) return;
                     
@@ -720,8 +776,8 @@
                         }, 500); // CSSアニメーションの完了を待つ
                         
                         blink();
-                    }, Math.random() * 2000 + 1000);
-                }, Math.random() * 4000 + 1000);
+                    }, timings.openTime);
+                }, timings.closeTime);
             }
             blink();
         }
@@ -846,12 +902,32 @@
             
             gameState.allStolenItems[stage.key].push(item);
             
+            // 警戒度を上げる（最大20まで）
+            if (gameState.alertLevel < 20) {
+                gameState.alertLevel++;
+                updateAlertLevelUI();
+            }
+            
             const stolenItems = document.getElementById('stolenItems');
             const itemSpan = document.createElement('span');
             itemSpan.textContent = item;
             stolenItems.appendChild(itemSpan);
             
-            element.classList.add('stolen');
+            // 店のアイテムは3秒後に復活、通行人のアイテムは永続的に盗済み状態
+            if (element.classList.contains('pedestrian-item')) {
+                element.classList.add('stolen');
+            } else if (element.classList.contains('item')) {
+                // 店のアイテムは3秒間使用不可にしてから復活
+                element.classList.add('stolen');
+                element.style.opacity = '0.3';
+                
+                setTimeout(() => {
+                    if (element && gameState.running) {
+                        element.classList.remove('stolen');
+                        element.style.opacity = '1';
+                    }
+                }, 3000); // 3秒後に復活
+            }
         }
 
         // 結果表示
@@ -927,7 +1003,7 @@
             }, 2000);
         }
 
-        // ゲーム再開
+        // ゲーム再開（完全リセット）
         function restartGame() {
             clearAllTimers();
             removeDragClone();
@@ -935,12 +1011,16 @@
             // ゲームオーバー表示を非表示
             document.getElementById('gameOver').style.display = 'none';
             
+            // 警戒度を完全リセット（新しいゲーム開始時のみ）
+            gameState.alertLevel = 0;
+            
             showScreen('startScreen');
         }
 
         // UI更新
         function updateUI() {
             document.getElementById('timeLeft').textContent = gameState.timeLeft;
+            updateAlertLevelUI();
         }
 
         // ゲーム開始
