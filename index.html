@@ -5,556 +5,586 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>野菜泥棒ゲーム</title>
     <style>
-        body {
+        * {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
             font-family: Arial, sans-serif;
-            background: linear-gradient(to bottom, #87CEEB, #98FB98);
+            background: linear-gradient(135deg, #87CEEB, #98FB98);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 400px;
+            margin: 0 auto;
+            background: #f0f8ff;
+            border: 2px solid #333;
+        }
+
+        #shopArea {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 200px;
+            background: #8B4513;
+            border: 3px solid #654321;
+            border-radius: 10px;
+        }
+
+        #shopTitle {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 5px 15px;
+            border: 2px solid #333;
+            border-radius: 15px;
+            font-weight: bold;
+        }
+
+        #shopkeeper {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 80px;
+            background: #FFE4B5;
+            border: 2px solid #333;
+            border-radius: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
         }
-        
-        canvas {
-            border: 3px solid #8B4513;
-            background: linear-gradient(to bottom, #87CEEB, #90EE90);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        
-        .ui {
-            margin: 10px 0;
-            padding: 10px;
-            background: rgba(255,255,255,0.9);
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .needed-items {
+
+        .eyes {
             display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .eye {
+            width: 12px;
+            height: 12px;
+            background: black;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .eye.closed {
+            height: 2px;
+            background: #333;
+        }
+
+        #vegetables {
+            position: absolute;
+            top: 30px;
+            left: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 15px;
-            align-items: center;
+            width: 240px;
         }
-        
-        .item {
+
+        .vegetable {
+            width: 70px;
+            height: 70px;
+            border: 3px solid #333;
+            border-radius: 12px;
             display: flex;
             align-items: center;
-            gap: 5px;
-            padding: 5px 10px;
-            background: #fff;
-            border-radius: 5px;
-            border: 2px solid #ddd;
+            justify-content: center;
+            font-size: 32px;
+            cursor: pointer;
+            background: white;
+            transition: transform 0.1s ease;
         }
-        
-        .item.completed {
+
+        .vegetable:active {
+            transform: scale(0.95);
+        }
+
+        #walkArea {
+            position: absolute;
+            top: 240px;
+            left: 0;
+            right: 0;
+            height: 120px;
             background: #90EE90;
-            border-color: #32CD32;
+            border-top: 2px solid #333;
+            overflow: hidden;
+            padding-top: 35px;
         }
-        
-        .timer {
-            font-size: 24px;
+
+        .pedestrian {
+            position: absolute;
+            width: 60px;
+            height: 80px;
+            background: #87CEEB;
+            border: 2px solid #333;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: walkLeft 8s linear infinite;
+        }
+
+        @keyframes walkLeft {
+            from {
+                left: 100%;
+            }
+            to {
+                left: -80px;
+            }
+        }
+
+        .pedestrian-vegetable {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            cursor: pointer;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        #thiefBag {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 140px;
+            background: #8B4513;
+            border: 4px solid #333;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             font-weight: bold;
-            color: #FF4500;
+            font-size: 16px;
         }
-        
-        .game-over {
-            position: fixed;
+
+        #gameUI {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #333;
+        }
+
+        #gameOver {
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
+            background: rgba(255, 0, 0, 0.9);
             color: white;
             padding: 30px;
             border-radius: 15px;
             text-align: center;
             font-size: 24px;
+            font-weight: bold;
             display: none;
+            z-index: 1000;
         }
-        
+
+        #gameComplete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 200, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+        }
+
         button {
             margin-top: 15px;
             padding: 10px 20px;
-            font-size: 18px;
-            background: #4CAF50;
-            color: white;
+            font-size: 16px;
+            cursor: pointer;
             border: none;
             border-radius: 5px;
-            cursor: pointer;
+            background: #4CAF50;
+            color: white;
         }
-        
-        button:hover {
-            background: #45a049;
+
+        .stolen-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
-    <h1>🥕 八百屋エリア 🥔</h1>
-    
-    <div class="ui">
-        <div class="needed-items">
-            <span>必要な食材:</span>
-            <div class="item" id="potato">🥔 × <span id="potato-count">3</span></div>
-            <div class="item" id="carrot">🥕 × <span id="carrot-count">6</span></div>
-            <div class="item" id="onion">🧅 × <span id="onion-count">3</span></div>
+    <div id="gameContainer">
+        <div id="shopArea">
+            <div id="shopTitle">八百屋エリア</div>
+            <div id="shopkeeper">
+                <div class="eyes">
+                    <div class="eye" id="shopkeeperEye1"></div>
+                    <div class="eye" id="shopkeeperEye2"></div>
+                </div>
+            </div>
+            <div id="vegetables">
+                <div class="vegetable" data-vegetable="🥕">🥕</div>
+                <div class="vegetable" data-vegetable="🍅">🍅</div>
+                <div class="vegetable" data-vegetable="🥬">🥬</div>
+                <div class="vegetable" data-vegetable="🥒">🥒</div>
+                <div class="vegetable" data-vegetable="🫑">🫑</div>
+                <div class="vegetable" data-vegetable="🧄">🧄</div>
+            </div>
         </div>
-    </div>
-    
-    <div class="ui">
-        <div class="timer">時間: <span id="time">60</span>秒</div>
-    </div>
-    
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
-    
-    <div class="game-over" id="gameOver">
-        <div id="gameOverMessage"></div>
-        <button onclick="restartGame()">もう一度プレイ</button>
+
+        <div id="walkArea"></div>
+
+        <div id="thiefBag">
+            <div>泥棒袋</div>
+            <div class="stolen-items" id="stolenItems"></div>
+        </div>
+
+        <div id="gameUI">
+            <div>時間: <span id="timeLeft">20</span>秒</div>
+        </div>
+
+        <div id="gameOver">
+            <div>ゲームオーバー！</div>
+            <div>見つかってしまいました</div>
+            <button onclick="restartGame()">もう一度</button>
+        </div>
+
+        <div id="gameComplete">
+            <div>時間終了！</div>
+            <button onclick="restartGame()">もう一度</button>
+        </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        // ゲーム状態
+        let gameRunning = false;
+        let timeLeft = 20;
+        let shopkeeperWatching = true;
+        let pedestrians = [];
+        let draggedElement = null;
+        let dragStartPos = { x: 0, y: 0 };
         
-        let gameState = 'playing'; // 'playing', 'gameOver', 'won'
-        let timeLeft = 60;
-        let gameTimer;
-        
-        // 必要な食材
-        const neededItems = {
-            potato: 3,
-            carrot: 6,
-            onion: 3
-        };
-        
-        const collectedItems = {
-            potato: 0,
-            carrot: 0,
-            onion: 0
-        };
-        
-        // 八百屋
-        const shopkeeper = {
-            x: 650,
-            y: 40,
-            width: 60,
-            height: 80,
-            isWatching: true,
-            nextTurnTime: Date.now() + Math.random() * 4000 + 1000,
-            turnDuration: 0,
-            vegetables: [
-                { type: 'potato', x: 580, y: 120, emoji: '🥔' },
-                { type: 'carrot', x: 620, y: 120, emoji: '🥕' },
-                { type: 'onion', x: 660, y: 120, emoji: '🧅' },
-                { type: 'potato', x: 700, y: 120, emoji: '🥔' },
-                { type: 'carrot', x: 740, y: 120, emoji: '🥕' },
-                { type: 'onion', x: 780, y: 120, emoji: '🧅' },
-                { type: 'potato', x: 580, y: 160, emoji: '🥔' },
-                { type: 'carrot', x: 620, y: 160, emoji: '🥕' },
-                { type: 'onion', x: 660, y: 160, emoji: '🧅' },
-                { type: 'potato', x: 700, y: 160, emoji: '🥔' },
-                { type: 'carrot', x: 740, y: 160, emoji: '🥕' },
-                { type: 'onion', x: 780, y: 160, emoji: '🧅' }
-            ]
-        };
-        
-        // 通行人
-        const pedestrians = [];
-        let lastPedestrianSpawn = 0;
-        
-        // トラック
-        const trucks = [];
-        let lastTruckSpawn = 0;
-        
-        class Truck {
-            constructor() {
-                this.x = -150;
-                this.y = 200;
-                this.width = 120;
-                this.height = 60;
-                this.speed = 1.8 + Math.random() * 1.7;
-                this.isWatching = true;
-                this.nextTurnTime = Date.now() + Math.random() * 5000 + 2000;
-                this.turnDuration = 0;
-                this.vegetables = this.getRandomVegetables();
-            }
+        // タイマー管理
+        let gameTimer = null;
+        let shopkeeperTimer = null;
+        let pedestrianTimer = null;
+
+        // ゲーム初期化
+        function initGame() {
+            clearAllTimers();
             
-            getRandomVegetables() {
-                const vegetables = ['potato', 'carrot', 'onion'];
-                const emojis = { potato: '🥔', carrot: '🥕', onion: '🧅' };
-                const type = vegetables[Math.floor(Math.random() * vegetables.length)];
-                
-                // 同種の野菜を3つ持つ
-                return [
-                    { type, emoji: emojis[type] },
-                    { type, emoji: emojis[type] },
-                    { type, emoji: emojis[type] }
-                ];
-            }
+            gameRunning = true;
+            timeLeft = 20;
+            shopkeeperWatching = true;
+            pedestrians = [];
             
-            update() {
-                // 向きを変える処理
-                const now = Date.now();
-                if (this.isWatching && now >= this.nextTurnTime) {
-                    this.isWatching = false;
-                    this.turnDuration = now + Math.random() * 3000 + 1500;
-                } else if (!this.isWatching && now >= this.turnDuration) {
-                    this.isWatching = true;
-                    this.nextTurnTime = now + Math.random() * 5000 + 2000;
-                }
-                
-                // 見ている時のみ移動
-                if (this.isWatching) {
-                    this.x += this.speed;
-                }
-            }
-            
-            draw() {
-                // トラック本体
-                ctx.fillStyle = '#4169E1';
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-                
-                // トラックのキャビン
-                ctx.fillStyle = '#1E90FF';
-                ctx.fillRect(this.x, this.y - 30, 40, 30);
-                
-                // 運転手の顔
-                ctx.fillStyle = '#FDBCB4';
-                ctx.fillRect(this.x + 5, this.y - 25, 30, 20);
-                
-                // 運転手の目
-                ctx.fillStyle = '#000';
-                if (this.isWatching) {
-                    ctx.fillRect(this.x + 10, this.y - 20, 4, 4);
-                    ctx.fillRect(this.x + 20, this.y - 20, 4, 4);
-                } else {
-                    ctx.fillRect(this.x + 10, this.y - 20, 8, 2);
-                    ctx.fillRect(this.x + 20, this.y - 20, 8, 2);
-                }
-                
-                // トラックのタイヤ
-                ctx.fillStyle = '#000';
-                ctx.beginPath();
-                ctx.arc(this.x + 20, this.y + this.height, 10, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(this.x + this.width - 20, this.y + this.height, 10, 0, 2 * Math.PI);
-                ctx.fill();
-                
-                // 野菜を描画
-                ctx.font = '24px Arial';
-                ctx.textAlign = 'center';
-                this.vegetables.forEach((veg, index) => {
-                    const vegX = this.x + 50 + (index * 25);
-                    const vegY = this.y - 15;
-                    ctx.fillText(veg.emoji, vegX, vegY);
-                });
-                
-                // 向いている方向を示す
-                if (this.isWatching) {
-                    ctx.fillStyle = '#FF0000';
-                    ctx.fillText('👀', this.x + 20, this.y + 90);
-                }
-            }
+            updateUI();
+            startGameTimer();
+            startShopkeeperBlinking();
+            startPedestrianSpawning();
         }
-        
-        class Pedestrian {
-            constructor() {
-                this.x = canvas.width + 50;
-                this.y = 300;
-                this.width = 50;
-                this.height = 70;
-                this.speed = 0.7 + Math.random() * 1.3;
-                this.isWatching = true;
-                this.nextTurnTime = Date.now() + Math.random() * 4000 + 1000;
-                this.turnDuration = 0;
-                this.vegetable = this.getRandomVegetable();
-            }
-            
-            getRandomVegetable() {
-                const vegetables = ['potato', 'carrot', 'onion'];
-                const emojis = { potato: '🥔', carrot: '🥕', onion: '🧅' };
-                const type = vegetables[Math.floor(Math.random() * vegetables.length)];
-                return { type, emoji: emojis[type] };
-            }
-            
-            update() {
-                // 向きを変える処理
-                const now = Date.now();
-                if (this.isWatching && now >= this.nextTurnTime) {
-                    this.isWatching = false;
-                    this.turnDuration = now + Math.random() * 2000 + 1000;
-                } else if (!this.isWatching && now >= this.turnDuration) {
-                    this.isWatching = true;
-                    this.nextTurnTime = now + Math.random() * 4000 + 1000;
-                }
-                
-                // 見ている時のみ移動
-                if (this.isWatching) {
-                    this.x -= this.speed;
-                }
-            }
-            
-            draw() {
-                // 通行人を描画
-                ctx.fillStyle = '#8B4513';
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-                
-                // 顔
-                ctx.fillStyle = '#FDBCB4';
-                ctx.fillRect(this.x + 10, this.y + 10, 30, 30);
-                
-                // 目
-                ctx.fillStyle = '#000';
-                if (this.isWatching) {
-                    ctx.fillRect(this.x + 15, this.y + 18, 4, 4);
-                    ctx.fillRect(this.x + 25, this.y + 18, 4, 4);
-                } else {
-                    ctx.fillRect(this.x + 15, this.y + 18, 8, 2);
-                    ctx.fillRect(this.x + 25, this.y + 18, 8, 2);
-                }
-                
-                // 野菜
-                ctx.font = '24px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(this.vegetable.emoji, this.x + 25, this.y - 10);
-                
-                // 向いている方向を示す矢印
-                if (this.isWatching) {
-                    ctx.fillStyle = '#FF0000';
-                    ctx.fillText('👀', this.x + 25, this.y + 100);
-                }
-            }
+
+        // 全タイマークリア
+        function clearAllTimers() {
+            if (gameTimer) clearInterval(gameTimer);
+            if (shopkeeperTimer) clearTimeout(shopkeeperTimer);
+            if (pedestrianTimer) clearInterval(pedestrianTimer);
+            gameTimer = null;
+            shopkeeperTimer = null;
+            pedestrianTimer = null;
         }
-        
-        // ゲーム開始
-        function startGame() {
+
+        // ゲームタイマー開始
+        function startGameTimer() {
             gameTimer = setInterval(() => {
+                if (!gameRunning) return;
+                
                 timeLeft--;
-                document.getElementById('time').textContent = timeLeft;
+                updateUI();
                 
                 if (timeLeft <= 0) {
-                    endGame('時間切れ！ゲームオーバー！');
+                    endGame();
                 }
             }, 1000);
         }
-        
-        // ゲーム終了
-        function endGame(message) {
-            gameState = 'gameOver';
-            clearInterval(gameTimer);
-            document.getElementById('gameOverMessage').textContent = message;
+
+        // 八百屋の瞬き制御
+        function startShopkeeperBlinking() {
+            function blink() {
+                if (!gameRunning) return;
+                
+                // 1-5秒後に瞬きする
+                shopkeeperTimer = setTimeout(() => {
+                    if (!gameRunning) return;
+                    
+                    // 目を閉じる
+                    shopkeeperWatching = false;
+                    document.getElementById('shopkeeperEye1').classList.add('closed');
+                    document.getElementById('shopkeeperEye2').classList.add('closed');
+                    
+                    // 1-3秒後に目を開ける
+                    shopkeeperTimer = setTimeout(() => {
+                        if (!gameRunning) return;
+                        
+                        shopkeeperWatching = true;
+                        document.getElementById('shopkeeperEye1').classList.remove('closed');
+                        document.getElementById('shopkeeperEye2').classList.remove('closed');
+                        
+                        blink(); // 次の瞬きをスケジュール
+                    }, Math.random() * 2000 + 1000); // 1-3秒
+                }, Math.random() * 4000 + 1000); // 1-5秒
+            }
+            
+            blink();
+        }
+
+        // 通行人の生成開始
+        function startPedestrianSpawning() {
+            // 最初の通行人をすぐに作成
+            createPedestrian();
+            
+            // 3秒間隔で通行人を生成
+            pedestrianTimer = setInterval(() => {
+                if (!gameRunning) return;
+                createPedestrian();
+            }, 3000);
+        }
+
+        // 通行人作成
+        function createPedestrian() {
+            if (!gameRunning) return;
+            
+            const pedestrian = document.createElement('div');
+            pedestrian.className = 'pedestrian';
+            
+            const eyes = document.createElement('div');
+            eyes.className = 'eyes';
+            const eye1 = document.createElement('div');
+            const eye2 = document.createElement('div');
+            eye1.className = 'eye';
+            eye2.className = 'eye';
+            eyes.appendChild(eye1);
+            eyes.appendChild(eye2);
+            
+            const vegetables = ['🥕', '🍅', '🥬', '🥒', '🫑', '🧄'];
+            const veggie = vegetables[Math.floor(Math.random() * vegetables.length)];
+            const vegetableElement = document.createElement('div');
+            vegetableElement.className = 'pedestrian-vegetable';
+            vegetableElement.textContent = veggie;
+            vegetableElement.dataset.vegetable = veggie;
+            
+            pedestrian.appendChild(eyes);
+            pedestrian.appendChild(vegetableElement);
+            
+            pedestrian.watching = true;
+            pedestrian.eye1 = eye1;
+            pedestrian.eye2 = eye2;
+            
+            document.getElementById('walkArea').appendChild(pedestrian);
+            pedestrians.push(pedestrian);
+            
+            // 通行人の瞬き制御
+            function pedestrianBlink() {
+                if (!gameRunning || !pedestrian.parentNode) return;
+                
+                setTimeout(() => {
+                    if (!gameRunning || !pedestrian.parentNode) return;
+                    
+                    pedestrian.watching = false;
+                    pedestrian.eye1.classList.add('closed');
+                    pedestrian.eye2.classList.add('closed');
+                    
+                    setTimeout(() => {
+                        if (!gameRunning || !pedestrian.parentNode) return;
+                        
+                        pedestrian.watching = true;
+                        pedestrian.eye1.classList.remove('closed');
+                        pedestrian.eye2.classList.remove('closed');
+                        
+                        pedestrianBlink();
+                    }, Math.random() * 2000 + 1000);
+                }, Math.random() * 4000 + 1000);
+            }
+            
+            pedestrianBlink();
+            
+            // 8秒後に削除
+            setTimeout(() => {
+                if (pedestrian.parentNode) {
+                    pedestrian.parentNode.removeChild(pedestrian);
+                    const index = pedestrians.indexOf(pedestrian);
+                    if (index > -1) {
+                        pedestrians.splice(index, 1);
+                    }
+                }
+            }, 8000);
+        }
+
+        // タッチ/マウスイベント
+        function setupTouchEvents() {
+            const gameContainer = document.getElementById('gameContainer');
+            
+            // マウス/タッチ開始
+            function handleStart(e) {
+                const touch = e.touches ? e.touches[0] : e;
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                
+                if (target.classList.contains('vegetable') || target.classList.contains('pedestrian-vegetable')) {
+                    draggedElement = target;
+                    dragStartPos = { x: touch.clientX, y: touch.clientY };
+                    e.preventDefault();
+                }
+            }
+            
+            // マウス/タッチ終了
+            function handleEnd(e) {
+                if (!draggedElement) return;
+                
+                const touch = e.changedTouches ? e.changedTouches[0] : e;
+                const endPos = { x: touch.clientX, y: touch.clientY };
+                
+                // フリック距離を計算
+                const distance = Math.sqrt(
+                    Math.pow(endPos.x - dragStartPos.x, 2) + 
+                    Math.pow(endPos.y - dragStartPos.y, 2)
+                );
+                
+                if (distance > 30) { // フリック距離を短縮してタッチしやすく
+                    attemptTheft(draggedElement);
+                }
+                
+                draggedElement = null;
+                e.preventDefault();
+            }
+            
+            gameContainer.addEventListener('touchstart', handleStart, { passive: false });
+            gameContainer.addEventListener('mousedown', handleStart);
+            gameContainer.addEventListener('touchend', handleEnd, { passive: false });
+            gameContainer.addEventListener('mouseup', handleEnd);
+        }
+
+        // 盗みの試行
+        function attemptTheft(element) {
+            if (!gameRunning) return;
+            
+            let isWatched = false;
+            
+            if (element.classList.contains('vegetable')) {
+                // 八百屋の野菜
+                isWatched = shopkeeperWatching;
+            } else if (element.classList.contains('pedestrian-vegetable')) {
+                // 通行人の野菜
+                const pedestrian = element.parentNode;
+                isWatched = pedestrian.watching;
+            }
+            
+            if (isWatched) {
+                // 見られていた場合、ゲームオーバー
+                gameOver();
+            } else {
+                // 成功！野菜を盗む
+                stealVegetable(element);
+            }
+        }
+
+        // 野菜を盗む
+        function stealVegetable(element) {
+            const vegetable = element.dataset.vegetable;
+            
+            // 泥棒袋に追加
+            const stolenItems = document.getElementById('stolenItems');
+            const item = document.createElement('span');
+            item.textContent = vegetable;
+            stolenItems.appendChild(item);
+            
+            // 元の野菜を隠す
+            element.style.opacity = '0.3';
+            element.style.pointerEvents = 'none';
+        }
+
+        // ゲームオーバー
+        function gameOver() {
+            gameRunning = false;
+            clearAllTimers();
             document.getElementById('gameOver').style.display = 'block';
         }
-        
+
+        // ゲーム終了
+        function endGame() {
+            gameRunning = false;
+            clearAllTimers();
+            document.getElementById('gameComplete').style.display = 'block';
+        }
+
         // ゲーム再開
         function restartGame() {
-            gameState = 'playing';
-            timeLeft = 60;
-            collectedItems.potato = 0;
-            collectedItems.carrot = 0;
-            collectedItems.onion = 0;
-            pedestrians.length = 0;
-            trucks.length = 0;
-            shopkeeper.isWatching = true;
-            shopkeeper.nextTurnTime = Date.now() + Math.random() * 4000 + 1000;
+            clearAllTimers();
             
-            // 八百屋の野菜を初期状態に戻す
-            shopkeeper.vegetables = [
-                { type: 'potato', x: 580, y: 120, emoji: '🥔' },
-                { type: 'carrot', x: 620, y: 120, emoji: '🥕' },
-                { type: 'onion', x: 660, y: 120, emoji: '🧅' },
-                { type: 'potato', x: 700, y: 120, emoji: '🥔' },
-                { type: 'carrot', x: 740, y: 120, emoji: '🥕' },
-                { type: 'onion', x: 780, y: 120, emoji: '🧅' },
-                { type: 'potato', x: 580, y: 160, emoji: '🥔' },
-                { type: 'carrot', x: 620, y: 160, emoji: '🥕' },
-                { type: 'onion', x: 660, y: 160, emoji: '🧅' },
-                { type: 'potato', x: 700, y: 160, emoji: '🥔' },
-                { type: 'carrot', x: 740, y: 160, emoji: '🥕' },
-                { type: 'onion', x: 780, y: 160, emoji: '🧅' }
-            ];
-            
-            updateUI();
+            // リセット
             document.getElementById('gameOver').style.display = 'none';
-            startGame();
+            document.getElementById('gameComplete').style.display = 'none';
+            document.getElementById('stolenItems').innerHTML = '';
+            
+            // 野菜をリセット
+            document.querySelectorAll('.vegetable').forEach(veg => {
+                veg.style.opacity = '1';
+                veg.style.pointerEvents = 'auto';
+            });
+            
+            // 通行人をリセット
+            document.getElementById('walkArea').innerHTML = '';
+            pedestrians = [];
+            
+            // 八百屋の目をリセット
+            document.getElementById('shopkeeperEye1').classList.remove('closed');
+            document.getElementById('shopkeeperEye2').classList.remove('closed');
+            
+            initGame();
         }
-        
+
         // UI更新
         function updateUI() {
-            ['potato', 'carrot', 'onion'].forEach(item => {
-                const remaining = neededItems[item] - collectedItems[item];
-                document.getElementById(`${item}-count`).textContent = remaining;
-                
-                const element = document.getElementById(item);
-                if (remaining <= 0) {
-                    element.classList.add('completed');
-                } else {
-                    element.classList.remove('completed');
-                }
-            });
-            
-            // 勝利条件チェック
-            if (collectedItems.potato >= neededItems.potato && 
-                collectedItems.carrot >= neededItems.carrot && 
-                collectedItems.onion >= neededItems.onion) {
-                endGame('おめでとう！全ての食材を集めました！');
-            }
+            document.getElementById('timeLeft').textContent = timeLeft;
         }
-        
-        // クリック処理
-        canvas.addEventListener('click', (e) => {
-            if (gameState !== 'playing') return;
-            
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-            
-            // 八百屋の野菜をクリック
-            shopkeeper.vegetables.forEach((veg, index) => {
-                if (clickX >= veg.x - 15 && clickX <= veg.x + 15 && 
-                    clickY >= veg.y - 15 && clickY <= veg.y + 15) {
-                    
-                    if (shopkeeper.isWatching) {
-                        endGame('八百屋に見つかった！ゲームオーバー！');
-                    } else {
-                        collectedItems[veg.type]++;
-                        shopkeeper.vegetables.splice(index, 1);
-                        updateUI();
-                    }
-                }
-            });
-            
-            // 通行人の野菜をクリック
-            pedestrians.forEach((ped, index) => {
-                if (clickX >= ped.x && clickX <= ped.x + ped.width && 
-                    clickY >= ped.y - 30 && clickY <= ped.y) {
-                    
-                    if (ped.isWatching) {
-                        endGame('通行人に見つかった！ゲームオーバー！');
-                    } else {
-                        collectedItems[ped.vegetable.type]++;
-                        pedestrians.splice(index, 1);
-                        updateUI();
-                    }
-                }
-            });
-            
-            // トラックの野菜をクリック
-            trucks.forEach((truck, truckIndex) => {
-                truck.vegetables.forEach((veg, vegIndex) => {
-                    const vegX = truck.x + 50 + (vegIndex * 25);
-                    const vegY = truck.y - 15;
-                    
-                    if (clickX >= vegX - 15 && clickX <= vegX + 15 && 
-                        clickY >= vegY - 15 && clickY <= vegY + 15) {
-                        
-                        if (truck.isWatching) {
-                            endGame('トラックの運転手に見つかった！ゲームオーバー！');
-                        } else {
-                            collectedItems[veg.type]++;
-                            truck.vegetables.splice(vegIndex, 1);
-                            updateUI();
-                        }
-                    }
-                });
-            });
-        });
-        
-        // ゲームループ
-        function gameLoop() {
-            if (gameState !== 'playing') {
-                requestAnimationFrame(gameLoop);
-                return;
-            }
-            
-            // 画面クリア
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // 背景（地面）
-            ctx.fillStyle = '#90EE90';
-            ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
-            
-            // 八百屋の更新
-            const now = Date.now();
-            if (shopkeeper.isWatching && now >= shopkeeper.nextTurnTime) {
-                shopkeeper.isWatching = false;
-                shopkeeper.turnDuration = now + Math.random() * 2000 + 1000;
-            } else if (!shopkeeper.isWatching && now >= shopkeeper.turnDuration) {
-                shopkeeper.isWatching = true;
-                shopkeeper.nextTurnTime = now + Math.random() * 4000 + 1000;
-            }
-            
-            // 八百屋を描画
-            ctx.fillStyle = '#228B22';
-            ctx.fillRect(shopkeeper.x, shopkeeper.y, shopkeeper.width, shopkeeper.height);
-            
-            // 八百屋の顔
-            ctx.fillStyle = '#FDBCB4';
-            ctx.fillRect(shopkeeper.x + 10, shopkeeper.y + 10, 40, 40);
-            
-            // 八百屋の目
-            ctx.fillStyle = '#000';
-            if (shopkeeper.isWatching) {
-                ctx.fillRect(shopkeeper.x + 18, shopkeeper.y + 20, 6, 6);
-                ctx.fillRect(shopkeeper.x + 30, shopkeeper.y + 20, 6, 6);
-            } else {
-                ctx.fillRect(shopkeeper.x + 18, shopkeeper.y + 20, 10, 3);
-                ctx.fillRect(shopkeeper.x + 30, shopkeeper.y + 20, 10, 3);
-            }
-            
-            // 八百屋の野菜を描画
-            ctx.font = '24px Arial';
-            ctx.textAlign = 'center';
-            shopkeeper.vegetables.forEach(veg => {
-                ctx.fillText(veg.emoji, veg.x, veg.y);
-            });
-            
-            // 八百屋の視線を示す
-            if (shopkeeper.isWatching) {
-                ctx.fillStyle = '#FF0000';
-                ctx.fillText('👀', shopkeeper.x + 30, shopkeeper.y + 100);
-            }
-            
-            // 通行人の生成
-            if (now - lastPedestrianSpawn > 6000 + Math.random() * 6000) {
-                pedestrians.push(new Pedestrian());
-                lastPedestrianSpawn = now;
-            }
-            
-            // トラックの生成
-            if (now - lastTruckSpawn > 10000 + Math.random() * 10000) {
-                trucks.push(new Truck());
-                lastTruckSpawn = now;
-            }
-            
-            // 通行人の更新と描画
-            for (let i = pedestrians.length - 1; i >= 0; i--) {
-                const ped = pedestrians[i];
-                ped.update();
-                ped.draw();
-                
-                // 画面外に出たら削除
-                if (ped.x < -100) {
-                    pedestrians.splice(i, 1);
-                }
-            }
-            
-            // トラックの更新と描画
-            for (let i = trucks.length - 1; i >= 0; i--) {
-                const truck = trucks[i];
-                truck.update();
-                truck.draw();
-                
-                // 画面外に出たら削除
-                if (truck.x > canvas.width + 200) {
-                    trucks.splice(i, 1);
-                }
-            }
-            
-            requestAnimationFrame(gameLoop);
-        }
-        
+
         // ゲーム開始
-        startGame();
-        gameLoop();
+        setupTouchEvents();
+        initGame();
     </script>
 </body>
 </html>
