@@ -114,6 +114,11 @@
             transform: scale(0.95);
         }
 
+        .vegetable.stolen {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
         #walkArea {
             position: absolute;
             top: 240px;
@@ -141,12 +146,8 @@
         }
 
         @keyframes walkLeft {
-            from {
-                left: 100%;
-            }
-            to {
-                left: -80px;
-            }
+            from { left: 100%; }
+            to { left: -80px; }
         }
 
         .pedestrian-vegetable {
@@ -165,6 +166,11 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .pedestrian-vegetable.stolen {
+            opacity: 0.3;
+            pointer-events: none;
         }
 
         #thiefBag {
@@ -195,13 +201,11 @@
             border: 2px solid #333;
         }
 
-        #gameOver {
+        #gameOver, #gameComplete {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(255, 0, 0, 0.9);
-            color: white;
             padding: 30px;
             border-radius: 15px;
             text-align: center;
@@ -211,20 +215,14 @@
             z-index: 1000;
         }
 
+        #gameOver {
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+        }
+
         #gameComplete {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             background: rgba(0, 200, 0, 0.9);
             color: white;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            display: none;
-            z-index: 1000;
         }
 
         button {
@@ -245,6 +243,28 @@
             margin-top: 8px;
             font-size: 16px;
         }
+
+        .drag-clone {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.8;
+            transform: translate(-50%, -50%);
+        }
+
+        .result-stolen {
+            margin: 15px 0;
+            font-size: 18px;
+        }
+
+        .result-stolen-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 24px;
+        }
     </style>
 </head>
 <body>
@@ -259,11 +279,11 @@
             </div>
             <div id="vegetables">
                 <div class="vegetable" data-vegetable="🥕">🥕</div>
-                <div class="vegetable" data-vegetable="🍅">🍅</div>
+                <div class="vegetable" data-vegetable="🥔">🥔</div>
+                <div class="vegetable" data-vegetable="🧅">🧅</div>
                 <div class="vegetable" data-vegetable="🥬">🥬</div>
+                <div class="vegetable" data-vegetable="🍅">🍅</div>
                 <div class="vegetable" data-vegetable="🥒">🥒</div>
-                <div class="vegetable" data-vegetable="🫑">🫑</div>
-                <div class="vegetable" data-vegetable="🧄">🧄</div>
             </div>
         </div>
 
@@ -281,296 +301,357 @@
         <div id="gameOver">
             <div>ゲームオーバー！</div>
             <div>見つかってしまいました</div>
+            <div class="result-stolen">
+                <div>盗んだ野菜:</div>
+                <div class="result-stolen-items" id="gameOverStolenItems"></div>
+            </div>
             <button onclick="restartGame()">もう一度</button>
         </div>
 
         <div id="gameComplete">
             <div>時間終了！</div>
+            <div class="result-stolen">
+                <div>盗んだ野菜:</div>
+                <div class="result-stolen-items" id="gameCompleteStolenItems"></div>
+            </div>
             <button onclick="restartGame()">もう一度</button>
         </div>
     </div>
 
     <script>
         // ゲーム状態
-        let gameRunning = false;
-        let timeLeft = 20;
-        let shopkeeperWatching = true;
-        let pedestrians = [];
-        let draggedElement = null;
-        let dragStartPos = { x: 0, y: 0 };
-        
-        // タイマー管理
-        let gameTimer = null;
-        let shopkeeperTimer = null;
-        let pedestrianTimer = null;
+        const gameState = {
+            running: false,
+            timeLeft: 20,
+            shopkeeperWatching: true,
+            pedestrians: [],
+            stolenVegetables: [],
+            dragData: {
+                element: null,
+                clone: null,
+                startPos: { x: 0, y: 0 }
+            },
+            timers: {
+                game: null,
+                shopkeeper: null,
+                pedestrianSpawner: null
+            }
+        };
 
         // ゲーム初期化
         function initGame() {
             clearAllTimers();
-            
-            gameRunning = true;
-            timeLeft = 20;
-            shopkeeperWatching = true;
-            pedestrians = [];
-            
+            resetGameState();
             updateUI();
+            startTimers();
+        }
+
+        // ゲーム状態リセット
+        function resetGameState() {
+            gameState.running = true;
+            gameState.timeLeft = 20;
+            gameState.shopkeeperWatching = true;
+            gameState.pedestrians = [];
+            gameState.stolenVegetables = [];
+            gameState.dragData = { element: null, clone: null, startPos: { x: 0, y: 0 } };
+        }
+
+        // 全タイマークリア
+        function clearAllTimers() {
+            Object.values(gameState.timers).forEach(timer => {
+                if (timer) clearInterval(timer);
+            });
+            gameState.timers = { game: null, shopkeeper: null, pedestrianSpawner: null };
+        }
+
+        // タイマー開始
+        function startTimers() {
             startGameTimer();
             startShopkeeperBlinking();
             startPedestrianSpawning();
         }
 
-        // 全タイマークリア
-        function clearAllTimers() {
-            if (gameTimer) clearInterval(gameTimer);
-            if (shopkeeperTimer) clearTimeout(shopkeeperTimer);
-            if (pedestrianTimer) clearInterval(pedestrianTimer);
-            gameTimer = null;
-            shopkeeperTimer = null;
-            pedestrianTimer = null;
-        }
-
-        // ゲームタイマー開始
+        // ゲームタイマー
         function startGameTimer() {
-            gameTimer = setInterval(() => {
-                if (!gameRunning) return;
-                
-                timeLeft--;
+            gameState.timers.game = setInterval(() => {
+                if (!gameState.running) return;
+                gameState.timeLeft--;
                 updateUI();
-                
-                if (timeLeft <= 0) {
-                    endGame();
-                }
+                if (gameState.timeLeft <= 0) endGame();
             }, 1000);
         }
 
-        // 八百屋の瞬き制御
+        // 八百屋の瞬き
         function startShopkeeperBlinking() {
             function blink() {
-                if (!gameRunning) return;
-                
-                // 1-5秒後に瞬きする
-                shopkeeperTimer = setTimeout(() => {
-                    if (!gameRunning) return;
-                    
-                    // 目を閉じる
-                    shopkeeperWatching = false;
+                if (!gameState.running) return;
+                gameState.timers.shopkeeper = setTimeout(() => {
+                    if (!gameState.running) return;
+                    gameState.shopkeeperWatching = false;
                     document.getElementById('shopkeeperEye1').classList.add('closed');
                     document.getElementById('shopkeeperEye2').classList.add('closed');
                     
-                    // 1-3秒後に目を開ける
-                    shopkeeperTimer = setTimeout(() => {
-                        if (!gameRunning) return;
-                        
-                        shopkeeperWatching = true;
+                    gameState.timers.shopkeeper = setTimeout(() => {
+                        if (!gameState.running) return;
+                        gameState.shopkeeperWatching = true;
                         document.getElementById('shopkeeperEye1').classList.remove('closed');
                         document.getElementById('shopkeeperEye2').classList.remove('closed');
-                        
-                        blink(); // 次の瞬きをスケジュール
-                    }, Math.random() * 2000 + 1000); // 1-3秒
-                }, Math.random() * 4000 + 1000); // 1-5秒
+                        blink();
+                    }, Math.random() * 2000 + 1000);
+                }, Math.random() * 4000 + 1000);
             }
-            
             blink();
         }
 
-        // 通行人の生成開始
+        // 通行人生成
         function startPedestrianSpawning() {
-            // 最初の通行人をすぐに作成
-            createPedestrian();
-            
-            // 3秒間隔で通行人を生成
-            pedestrianTimer = setInterval(() => {
-                if (!gameRunning) return;
+            createPedestrian(); // 最初の通行人
+            gameState.timers.pedestrianSpawner = setInterval(() => {
+                if (!gameState.running) return;
                 createPedestrian();
             }, 3000);
         }
 
         // 通行人作成
         function createPedestrian() {
-            if (!gameRunning) return;
-            
+            if (!gameState.running) return;
+
             const pedestrian = document.createElement('div');
             pedestrian.className = 'pedestrian';
             
             const eyes = document.createElement('div');
             eyes.className = 'eyes';
-            const eye1 = document.createElement('div');
-            const eye2 = document.createElement('div');
-            eye1.className = 'eye';
-            eye2.className = 'eye';
-            eyes.appendChild(eye1);
-            eyes.appendChild(eye2);
-            
-            const vegetables = ['🥕', '🍅', '🥬', '🥒', '🫑', '🧄'];
+            ['eye1', 'eye2'].forEach(id => {
+                const eye = document.createElement('div');
+                eye.className = 'eye';
+                eye.id = id;
+                eyes.appendChild(eye);
+                pedestrian[id] = eye;
+            });
+
+            const vegetables = ['🥕', '🥔', '🧅', '🥬', '🍅', '🥒'];
             const veggie = vegetables[Math.floor(Math.random() * vegetables.length)];
             const vegetableElement = document.createElement('div');
             vegetableElement.className = 'pedestrian-vegetable';
             vegetableElement.textContent = veggie;
             vegetableElement.dataset.vegetable = veggie;
-            
+
             pedestrian.appendChild(eyes);
             pedestrian.appendChild(vegetableElement);
-            
             pedestrian.watching = true;
-            pedestrian.eye1 = eye1;
-            pedestrian.eye2 = eye2;
-            
+
             document.getElementById('walkArea').appendChild(pedestrian);
-            pedestrians.push(pedestrian);
-            
-            // 通行人の瞬き制御
-            function pedestrianBlink() {
-                if (!gameRunning || !pedestrian.parentNode) return;
-                
+            gameState.pedestrians.push(pedestrian);
+
+            // 瞬き制御
+            startPedestrianBlinking(pedestrian);
+
+            // 8秒後に削除
+            setTimeout(() => {
+                if (pedestrian.parentNode) {
+                    pedestrian.parentNode.removeChild(pedestrian);
+                    const index = gameState.pedestrians.indexOf(pedestrian);
+                    if (index > -1) gameState.pedestrians.splice(index, 1);
+                }
+            }, 8000);
+        }
+
+        // 通行人の瞬き
+        function startPedestrianBlinking(pedestrian) {
+            function blink() {
+                if (!gameState.running || !pedestrian.parentNode) return;
                 setTimeout(() => {
-                    if (!gameRunning || !pedestrian.parentNode) return;
-                    
+                    if (!gameState.running || !pedestrian.parentNode) return;
                     pedestrian.watching = false;
                     pedestrian.eye1.classList.add('closed');
                     pedestrian.eye2.classList.add('closed');
                     
                     setTimeout(() => {
-                        if (!gameRunning || !pedestrian.parentNode) return;
-                        
+                        if (!gameState.running || !pedestrian.parentNode) return;
                         pedestrian.watching = true;
                         pedestrian.eye1.classList.remove('closed');
                         pedestrian.eye2.classList.remove('closed');
-                        
-                        pedestrianBlink();
+                        blink();
                     }, Math.random() * 2000 + 1000);
                 }, Math.random() * 4000 + 1000);
             }
-            
-            pedestrianBlink();
-            
-            // 8秒後に削除
-            setTimeout(() => {
-                if (pedestrian.parentNode) {
-                    pedestrian.parentNode.removeChild(pedestrian);
-                    const index = pedestrians.indexOf(pedestrian);
-                    if (index > -1) {
-                        pedestrians.splice(index, 1);
-                    }
-                }
-            }, 8000);
+            blink();
         }
 
-        // タッチ/マウスイベント
+        // タッチイベント設定
         function setupTouchEvents() {
-            const gameContainer = document.getElementById('gameContainer');
+            const container = document.getElementById('gameContainer');
             
-            // マウス/タッチ開始
-            function handleStart(e) {
-                const touch = e.touches ? e.touches[0] : e;
-                const target = document.elementFromPoint(touch.clientX, touch.clientY);
-                
-                if (target.classList.contains('vegetable') || target.classList.contains('pedestrian-vegetable')) {
-                    draggedElement = target;
-                    dragStartPos = { x: touch.clientX, y: touch.clientY };
-                    e.preventDefault();
-                }
-            }
-            
-            // マウス/タッチ終了
-            function handleEnd(e) {
-                if (!draggedElement) return;
-                
-                const touch = e.changedTouches ? e.changedTouches[0] : e;
-                const endPos = { x: touch.clientX, y: touch.clientY };
-                
-                // フリック距離を計算
-                const distance = Math.sqrt(
-                    Math.pow(endPos.x - dragStartPos.x, 2) + 
-                    Math.pow(endPos.y - dragStartPos.y, 2)
-                );
-                
-                if (distance > 30) { // フリック距離を短縮してタッチしやすく
-                    attemptTheft(draggedElement);
-                }
-                
-                draggedElement = null;
-                e.preventDefault();
-            }
-            
-            gameContainer.addEventListener('touchstart', handleStart, { passive: false });
-            gameContainer.addEventListener('mousedown', handleStart);
-            gameContainer.addEventListener('touchend', handleEnd, { passive: false });
-            gameContainer.addEventListener('mouseup', handleEnd);
+            container.addEventListener('touchstart', handleTouchStart, { passive: false });
+            container.addEventListener('mousedown', handleTouchStart);
+            container.addEventListener('touchmove', handleTouchMove, { passive: false });
+            container.addEventListener('mousemove', handleTouchMove);
+            container.addEventListener('touchend', handleTouchEnd, { passive: false });
+            container.addEventListener('mouseup', handleTouchEnd);
         }
 
-        // 盗みの試行
-        function attemptTheft(element) {
-            if (!gameRunning) return;
+        // タッチ開始
+        function handleTouchStart(e) {
+            if (!gameState.running) return;
             
-            let isWatched = false;
+            const touch = e.touches ? e.touches[0] : e;
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
             
-            if (element.classList.contains('vegetable')) {
-                // 八百屋の野菜
-                isWatched = shopkeeperWatching;
-            } else if (element.classList.contains('pedestrian-vegetable')) {
-                // 通行人の野菜
-                const pedestrian = element.parentNode;
-                isWatched = pedestrian.watching;
-            }
+            if (!isValidVegetable(target)) return;
             
-            if (isWatched) {
-                // 見られていた場合、ゲームオーバー
+            // 見張りチェック
+            if (isBeingWatched(target)) {
                 gameOver();
-            } else {
-                // 成功！野菜を盗む
-                stealVegetable(element);
+                return;
             }
+            
+            // ドラッグ開始
+            gameState.dragData.element = target;
+            gameState.dragData.startPos = { x: touch.clientX, y: touch.clientY };
+            createDragClone(target, touch.clientX, touch.clientY);
+            e.preventDefault();
+        }
+
+        // タッチ移動
+        function handleTouchMove(e) {
+            if (!gameState.dragData.element || !gameState.dragData.clone) return;
+            
+            const touch = e.touches ? e.touches[0] : e;
+            gameState.dragData.clone.style.left = touch.clientX + 'px';
+            gameState.dragData.clone.style.top = touch.clientY + 'px';
+            e.preventDefault();
+        }
+
+        // タッチ終了
+        function handleTouchEnd(e) {
+            if (!gameState.dragData.element) {
+                removeDragClone();
+                return;
+            }
+            
+            const touch = e.changedTouches ? e.changedTouches[0] : e;
+            const endPos = { x: touch.clientX, y: touch.clientY };
+            const distance = calculateDistance(gameState.dragData.startPos, endPos);
+            
+            if (distance > 30 && isOverThiefBag(endPos.x, endPos.y)) {
+                stealVegetable(gameState.dragData.element);
+            }
+            
+            removeDragClone();
+            gameState.dragData.element = null;
+            e.preventDefault();
+        }
+
+        // 有効な野菜かチェック
+        function isValidVegetable(element) {
+            return element && 
+                   (element.classList.contains('vegetable') || element.classList.contains('pedestrian-vegetable')) &&
+                   !element.classList.contains('stolen');
+        }
+
+        // 見張られているかチェック
+        function isBeingWatched(element) {
+            if (element.classList.contains('vegetable')) {
+                return gameState.shopkeeperWatching;
+            } else if (element.classList.contains('pedestrian-vegetable')) {
+                const pedestrian = element.parentNode;
+                return pedestrian && pedestrian.watching;
+            }
+            return false;
+        }
+
+        // ドラッグクローン作成
+        function createDragClone(element, x, y) {
+            gameState.dragData.clone = element.cloneNode(true);
+            gameState.dragData.clone.className = element.className + ' drag-clone';
+            gameState.dragData.clone.style.left = x + 'px';
+            gameState.dragData.clone.style.top = y + 'px';
+            document.body.appendChild(gameState.dragData.clone);
+        }
+
+        // ドラッグクローン削除
+        function removeDragClone() {
+            if (gameState.dragData.clone) {
+                document.body.removeChild(gameState.dragData.clone);
+                gameState.dragData.clone = null;
+            }
+        }
+
+        // 距離計算
+        function calculateDistance(pos1, pos2) {
+            return Math.sqrt(Math.pow(pos2.x - pos1.x, 2) + Math.pow(pos2.y - pos1.y, 2));
+        }
+
+        // 泥棒袋の上かチェック
+        function isOverThiefBag(x, y) {
+            const bag = document.getElementById('thiefBag');
+            const rect = bag.getBoundingClientRect();
+            const margin = 10;
+            return x >= (rect.left - margin) && x <= (rect.right + margin) &&
+                   y >= (rect.top - margin) && y <= (rect.bottom + margin);
         }
 
         // 野菜を盗む
         function stealVegetable(element) {
-            const vegetable = element.dataset.vegetable;
+            if (!element || element.classList.contains('stolen')) return;
             
-            // 泥棒袋に追加
+            const vegetable = element.dataset.vegetable;
+            gameState.stolenVegetables.push(vegetable);
+            
             const stolenItems = document.getElementById('stolenItems');
             const item = document.createElement('span');
             item.textContent = vegetable;
             stolenItems.appendChild(item);
             
-            // 元の野菜を隠す
-            element.style.opacity = '0.3';
-            element.style.pointerEvents = 'none';
+            element.classList.add('stolen');
+        }
+
+        // 盗んだ野菜を表示
+        function displayStolenVegetables(containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            if (gameState.stolenVegetables.length === 0) {
+                container.textContent = 'なし';
+                container.style.color = '#666';
+            } else {
+                gameState.stolenVegetables.forEach(vegetable => {
+                    const item = document.createElement('span');
+                    item.textContent = vegetable;
+                    container.appendChild(item);
+                });
+            }
         }
 
         // ゲームオーバー
         function gameOver() {
-            gameRunning = false;
+            gameState.running = false;
             clearAllTimers();
+            removeDragClone();
+            displayStolenVegetables('gameOverStolenItems');
             document.getElementById('gameOver').style.display = 'block';
         }
 
         // ゲーム終了
         function endGame() {
-            gameRunning = false;
+            gameState.running = false;
             clearAllTimers();
+            removeDragClone();
+            displayStolenVegetables('gameCompleteStolenItems');
             document.getElementById('gameComplete').style.display = 'block';
         }
 
         // ゲーム再開
         function restartGame() {
             clearAllTimers();
+            removeDragClone();
             
-            // リセット
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('gameComplete').style.display = 'none';
             document.getElementById('stolenItems').innerHTML = '';
             
-            // 野菜をリセット
-            document.querySelectorAll('.vegetable').forEach(veg => {
-                veg.style.opacity = '1';
-                veg.style.pointerEvents = 'auto';
-            });
-            
-            // 通行人をリセット
+            document.querySelectorAll('.vegetable').forEach(veg => veg.classList.remove('stolen'));
             document.getElementById('walkArea').innerHTML = '';
-            pedestrians = [];
-            
-            // 八百屋の目をリセット
             document.getElementById('shopkeeperEye1').classList.remove('closed');
             document.getElementById('shopkeeperEye2').classList.remove('closed');
             
@@ -579,7 +660,7 @@
 
         // UI更新
         function updateUI() {
-            document.getElementById('timeLeft').textContent = timeLeft;
+            document.getElementById('timeLeft').textContent = gameState.timeLeft;
         }
 
         // ゲーム開始
