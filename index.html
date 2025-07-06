@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>野菜泥棒ゲーム</title>
+    <title>カレー泥棒ゲーム</title>
     <style>
         * {
             margin: 0;
@@ -29,18 +29,72 @@
             border: 2px solid #333;
         }
 
-        #shopArea {
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .screen.active {
+            display: block !important;
+        }
+
+        /* スタート画面 */
+        #startScreen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #FFB347, #FF6347);
+            color: white;
+            text-align: center;
+        }
+
+        #startScreen h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #startScreen p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .start-button {
+            padding: 15px 30px;
+            font-size: 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.1s ease;
+        }
+
+        .start-button:hover {
+            transform: scale(1.05);
+        }
+
+        /* ゲーム画面共通 */
+        .shop-area {
             position: absolute;
             top: 15px;
             left: 20px;
             right: 20px;
             height: 180px;
-            background: #8B4513;
             border: 3px solid #654321;
             border-radius: 10px;
         }
 
-        #shopTitle {
+        .shop-title {
             position: absolute;
             top: -15px;
             left: 50%;
@@ -52,7 +106,7 @@
             font-weight: bold;
         }
 
-        #shopkeeper {
+        .shopkeeper {
             position: absolute;
             top: 20px;
             right: 20px;
@@ -86,7 +140,7 @@
             background: #333;
         }
 
-        #vegetables {
+        .items {
             position: absolute;
             top: 30px;
             left: 20px;
@@ -96,7 +150,7 @@
             width: 200px;
         }
 
-        .vegetable {
+        .item {
             width: 60px;
             height: 60px;
             border: 3px solid #333;
@@ -110,13 +164,28 @@
             transition: transform 0.1s ease;
         }
 
-        .vegetable:active {
+        .item:active {
             transform: scale(0.95);
         }
 
-        .vegetable.stolen {
+        .item.stolen {
             opacity: 0.3;
             pointer-events: none;
+        }
+
+        /* 八百屋 */
+        .vegetable-shop {
+            background: #8B4513;
+        }
+
+        /* スーパー */
+        .supermarket {
+            background: #4169E1;
+        }
+
+        /* コンビニ */
+        .convenience {
+            background: #32CD32;
         }
 
         #walkArea {
@@ -150,7 +219,7 @@
             to { left: -80px; }
         }
 
-        .pedestrian-vegetable {
+        .pedestrian-item {
             position: absolute;
             top: -25px;
             left: 50%;
@@ -168,7 +237,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        .pedestrian-vegetable.stolen {
+        .pedestrian-item.stolen {
             opacity: 0.3;
             pointer-events: none;
         }
@@ -201,11 +270,13 @@
             border: 2px solid #333;
         }
 
-        #gameOver, #gameComplete {
+        #gameOver {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
             padding: 30px;
             border-radius: 15px;
             text-align: center;
@@ -215,25 +286,56 @@
             z-index: 1000;
         }
 
-        #gameOver {
-            background: rgba(255, 0, 0, 0.9);
+        #resultScreen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
             color: white;
+            text-align: center;
+            padding: 20px;
         }
 
-        #gameComplete {
-            background: rgba(0, 200, 0, 0.9);
-            color: white;
+        .result-title {
+            font-size: 32px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
-        button {
-            margin-top: 15px;
+        .result-section {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        .result-section h3 {
+            margin-bottom: 10px;
+            color: #8B4513;
+        }
+
+        .result-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .restart-button {
+            margin-top: 20px;
             padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
+            font-size: 18px;
             background: #4CAF50;
             color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
         }
 
         .stolen-items {
@@ -252,69 +354,89 @@
             transform: translate(-50%, -50%);
         }
 
-        .result-stolen {
-            margin: 15px 0;
-            font-size: 18px;
-        }
-
-        .result-stolen-items {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 10px;
-            font-size: 24px;
+        .stage-indicator {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <div id="shopArea">
-            <div id="shopTitle">八百屋エリア</div>
-            <div id="shopkeeper">
-                <div class="eyes">
-                    <div class="eye" id="shopkeeperEye1"></div>
-                    <div class="eye" id="shopkeeperEye2"></div>
+        <!-- スタート画面 -->
+        <div id="startScreen" class="screen active">
+            <h1>🍛 カレー泥棒ゲーム 🍛</h1>
+            <p>
+                カレーの材料を集めましょう！<br>
+                八百屋、スーパー、コンビニを各20秒ずつ回って<br>
+                見つからないように材料を盗みましょう！
+            </p>
+            <button class="start-button" onclick="startGame()">ゲーム開始</button>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div id="gameScreen" class="screen" style="display: none;">
+            <div id="shopArea" class="shop-area vegetable-shop">
+                <div id="shopTitle" class="shop-title">八百屋エリア</div>
+                <div id="shopkeeper" class="shopkeeper">
+                    <div class="eyes">
+                        <div class="eye" id="shopkeeperEye1"></div>
+                        <div class="eye" id="shopkeeperEye2"></div>
+                    </div>
+                </div>
+                <div id="items" class="items">
+                    <!-- アイテムは動的に生成 -->
                 </div>
             </div>
-            <div id="vegetables">
-                <div class="vegetable" data-vegetable="🥕">🥕</div>
-                <div class="vegetable" data-vegetable="🥔">🥔</div>
-                <div class="vegetable" data-vegetable="🧅">🧅</div>
-                <div class="vegetable" data-vegetable="🥬">🥬</div>
-                <div class="vegetable" data-vegetable="🍅">🍅</div>
-                <div class="vegetable" data-vegetable="🥒">🥒</div>
+
+            <div id="walkArea"></div>
+
+            <div id="thiefBag">
+                <div>泥棒袋</div>
+                <div class="stolen-items" id="stolenItems"></div>
+            </div>
+
+            <div id="gameUI">
+                <div>時間: <span id="timeLeft">20</span>秒</div>
+                <div class="stage-indicator" id="stageIndicator">八百屋 (1/3)</div>
+            </div>
+
+            <div id="gameOver">
+                <div>ゲームオーバー！</div>
+                <div>見つかってしまいました</div>
+                <button onclick="restartGame()" style="margin-top: 15px; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background: #4CAF50; color: white;">もう一度</button>
             </div>
         </div>
 
-        <div id="walkArea"></div>
-
-        <div id="thiefBag">
-            <div>泥棒袋</div>
-            <div class="stolen-items" id="stolenItems"></div>
-        </div>
-
-        <div id="gameUI">
-            <div>時間: <span id="timeLeft">20</span>秒</div>
-        </div>
-
-        <div id="gameOver">
-            <div>ゲームオーバー！</div>
-            <div>見つかってしまいました</div>
-            <div class="result-stolen">
-                <div>盗んだ野菜:</div>
-                <div class="result-stolen-items" id="gameOverStolenItems"></div>
+        <!-- 結果画面 -->
+        <div id="resultScreen" class="screen" style="display: none;">
+            <div class="result-title">🍛 カレー泥棒 結果発表 🍛</div>
+            
+            <div class="result-section">
+                <h3>🥕 八百屋エリア</h3>
+                <div class="result-items" id="vegetableResults"></div>
             </div>
-            <button onclick="restartGame()">もう一度</button>
-        </div>
-
-        <div id="gameComplete">
-            <div>時間終了！</div>
-            <div class="result-stolen">
-                <div>盗んだ野菜:</div>
-                <div class="result-stolen-items" id="gameCompleteStolenItems"></div>
+            
+            <div class="result-section">
+                <h3>🛒 スーパーエリア</h3>
+                <div class="result-items" id="supermarketResults"></div>
             </div>
-            <button onclick="restartGame()">もう一度</button>
+            
+            <div class="result-section">
+                <h3>🏪 コンビニエリア</h3>
+                <div class="result-items" id="convenienceResults"></div>
+            </div>
+            
+            <div class="result-section">
+                <h3>📊 総合結果</h3>
+                <div>合計アイテム数: <span id="totalCount">0</span>個</div>
+                <div id="curryStatus"></div>
+            </div>
+
+            <button class="restart-button" onclick="restartGame()">もう一度プレイ</button>
         </div>
     </div>
 
@@ -323,9 +445,14 @@
         const gameState = {
             running: false,
             timeLeft: 20,
+            currentStage: 0, // 0: 八百屋, 1: スーパー, 2: コンビニ
             shopkeeperWatching: true,
             pedestrians: [],
-            stolenVegetables: [],
+            allStolenItems: {
+                vegetable: [],
+                supermarket: [],
+                convenience: []
+            },
             dragData: {
                 element: null,
                 clone: null,
@@ -338,12 +465,92 @@
             }
         };
 
-        // ゲーム初期化
-        function initGame() {
+        // 各エリアのアイテム
+        const stageData = {
+            0: {
+                name: '八百屋',
+                title: '八百屋エリア',
+                className: 'vegetable-shop',
+                items: ['🥕', '🥔', '🧅', '🥬', '🍅', '🥒'],
+                pedestrianItems: ['🥕', '🥔', '🧅', '🥬', '🍅', '🥒'],
+                key: 'vegetable'
+            },
+            1: {
+                name: 'スーパー',
+                title: 'スーパーエリア',
+                className: 'supermarket',
+                items: ['🍚', '🍛', '🥄', '🧈', '🧄', '🧂'],
+                pedestrianItems: ['🍚', '🍛', '🥄', '🧈', '🧄', '🧂'],
+                key: 'supermarket'
+            },
+            2: {
+                name: 'コンビニ',
+                title: 'コンビニエリア',
+                className: 'convenience',
+                items: ['💧', '🍫', '🍪', '🥤', '🍞', '🥛'],
+                pedestrianItems: ['💧', '🍫', '🍪', '🥤', '🍞', '🥛'],
+                key: 'convenience'
+            }
+        };
+
+        // ゲーム開始
+        function startGame() {
+            showScreen('gameScreen');
+            gameState.currentStage = 0;
+            gameState.allStolenItems = { vegetable: [], supermarket: [], convenience: [] };
+            setupStage();
+        }
+
+        // ステージセットアップ
+        function setupStage() {
             clearAllTimers();
             resetGameState();
+            
+            const stage = stageData[gameState.currentStage];
+            
+            // UI更新
+            document.getElementById('shopTitle').textContent = stage.title;
+            document.getElementById('stageIndicator').textContent = `${stage.name} (${gameState.currentStage + 1}/3)`;
+            
+            // エリアのスタイル変更
+            const shopArea = document.getElementById('shopArea');
+            shopArea.className = `shop-area ${stage.className}`;
+            
+            // アイテム配置
+            setupItems(stage.items);
+            
             updateUI();
             startTimers();
+        }
+
+        // アイテム配置
+        function setupItems(items) {
+            const container = document.getElementById('items');
+            container.innerHTML = '';
+            
+            items.forEach(item => {
+                const element = document.createElement('div');
+                element.className = 'item';
+                element.dataset.item = item;
+                element.textContent = item;
+                container.appendChild(element);
+            });
+        }
+
+        // 画面切り替え
+        function showScreen(screenId) {
+            // 全ての画面を非表示
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+                screen.style.display = 'none';
+            });
+            
+            // 指定された画面のみ表示
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+                targetScreen.style.display = 'block';
+            }
         }
 
         // ゲーム状態リセット
@@ -352,8 +559,14 @@
             gameState.timeLeft = 20;
             gameState.shopkeeperWatching = true;
             gameState.pedestrians = [];
-            gameState.stolenVegetables = [];
             gameState.dragData = { element: null, clone: null, startPos: { x: 0, y: 0 } };
+            
+            // UI リセット
+            document.getElementById('stolenItems').innerHTML = '';
+            document.getElementById('walkArea').innerHTML = '';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('shopkeeperEye1').classList.remove('closed');
+            document.getElementById('shopkeeperEye2').classList.remove('closed');
         }
 
         // 全タイマークリア
@@ -377,8 +590,23 @@
                 if (!gameState.running) return;
                 gameState.timeLeft--;
                 updateUI();
-                if (gameState.timeLeft <= 0) endGame();
+                if (gameState.timeLeft <= 0) nextStageOrEnd();
             }, 1000);
+        }
+
+        // 次のステージまたは終了
+        function nextStageOrEnd() {
+            gameState.running = false;
+            clearAllTimers();
+            
+            if (gameState.currentStage < 2) {
+                // 次のステージへ
+                gameState.currentStage++;
+                setTimeout(() => setupStage(), 1000);
+            } else {
+                // ゲーム終了
+                showResults();
+            }
         }
 
         // 八百屋の瞬き
@@ -405,7 +633,7 @@
 
         // 通行人生成
         function startPedestrianSpawning() {
-            createPedestrian(); // 最初の通行人
+            createPedestrian();
             gameState.timers.pedestrianSpawner = setInterval(() => {
                 if (!gameState.running) return;
                 createPedestrian();
@@ -416,6 +644,7 @@
         function createPedestrian() {
             if (!gameState.running) return;
 
+            const stage = stageData[gameState.currentStage];
             const pedestrian = document.createElement('div');
             pedestrian.className = 'pedestrian';
             
@@ -429,24 +658,22 @@
                 pedestrian[id] = eye;
             });
 
-            const vegetables = ['🥕', '🥔', '🧅', '🥬', '🍅', '🥒'];
-            const veggie = vegetables[Math.floor(Math.random() * vegetables.length)];
-            const vegetableElement = document.createElement('div');
-            vegetableElement.className = 'pedestrian-vegetable';
-            vegetableElement.textContent = veggie;
-            vegetableElement.dataset.vegetable = veggie;
+            const items = stage.pedestrianItems;
+            const item = items[Math.floor(Math.random() * items.length)];
+            const itemElement = document.createElement('div');
+            itemElement.className = 'pedestrian-item';
+            itemElement.textContent = item;
+            itemElement.dataset.item = item;
 
             pedestrian.appendChild(eyes);
-            pedestrian.appendChild(vegetableElement);
+            pedestrian.appendChild(itemElement);
             pedestrian.watching = true;
 
             document.getElementById('walkArea').appendChild(pedestrian);
             gameState.pedestrians.push(pedestrian);
 
-            // 瞬き制御
             startPedestrianBlinking(pedestrian);
 
-            // 8秒後に削除
             setTimeout(() => {
                 if (pedestrian.parentNode) {
                     pedestrian.parentNode.removeChild(pedestrian);
@@ -497,15 +724,13 @@
             const touch = e.touches ? e.touches[0] : e;
             const target = document.elementFromPoint(touch.clientX, touch.clientY);
             
-            if (!isValidVegetable(target)) return;
+            if (!isValidItem(target)) return;
             
-            // 見張りチェック
             if (isBeingWatched(target)) {
                 gameOver();
                 return;
             }
             
-            // ドラッグ開始
             gameState.dragData.element = target;
             gameState.dragData.startPos = { x: touch.clientX, y: touch.clientY };
             createDragClone(target, touch.clientX, touch.clientY);
@@ -534,7 +759,7 @@
             const distance = calculateDistance(gameState.dragData.startPos, endPos);
             
             if (distance > 30 && isOverThiefBag(endPos.x, endPos.y)) {
-                stealVegetable(gameState.dragData.element);
+                stealItem(gameState.dragData.element);
             }
             
             removeDragClone();
@@ -542,18 +767,18 @@
             e.preventDefault();
         }
 
-        // 有効な野菜かチェック
-        function isValidVegetable(element) {
+        // 有効なアイテムかチェック
+        function isValidItem(element) {
             return element && 
-                   (element.classList.contains('vegetable') || element.classList.contains('pedestrian-vegetable')) &&
+                   (element.classList.contains('item') || element.classList.contains('pedestrian-item')) &&
                    !element.classList.contains('stolen');
         }
 
         // 見張られているかチェック
         function isBeingWatched(element) {
-            if (element.classList.contains('vegetable')) {
+            if (element.classList.contains('item')) {
                 return gameState.shopkeeperWatching;
-            } else if (element.classList.contains('pedestrian-vegetable')) {
+            } else if (element.classList.contains('pedestrian-item')) {
                 const pedestrian = element.parentNode;
                 return pedestrian && pedestrian.watching;
             }
@@ -591,36 +816,61 @@
                    y >= (rect.top - margin) && y <= (rect.bottom + margin);
         }
 
-        // 野菜を盗む
-        function stealVegetable(element) {
+        // アイテムを盗む
+        function stealItem(element) {
             if (!element || element.classList.contains('stolen')) return;
             
-            const vegetable = element.dataset.vegetable;
-            gameState.stolenVegetables.push(vegetable);
+            const item = element.dataset.item;
+            const stage = stageData[gameState.currentStage];
+            
+            gameState.allStolenItems[stage.key].push(item);
             
             const stolenItems = document.getElementById('stolenItems');
-            const item = document.createElement('span');
-            item.textContent = vegetable;
-            stolenItems.appendChild(item);
+            const itemSpan = document.createElement('span');
+            itemSpan.textContent = item;
+            stolenItems.appendChild(itemSpan);
             
             element.classList.add('stolen');
         }
 
-        // 盗んだ野菜を表示
-        function displayStolenVegetables(containerId) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
+        // 結果表示
+        function showResults() {
+            document.getElementById('vegetableResults').innerHTML = 
+                gameState.allStolenItems.vegetable.length ? 
+                gameState.allStolenItems.vegetable.map(item => `<span>${item}</span>`).join('') : 
+                '<span style="color: #999;">なし</span>';
+                
+            document.getElementById('supermarketResults').innerHTML = 
+                gameState.allStolenItems.supermarket.length ? 
+                gameState.allStolenItems.supermarket.map(item => `<span>${item}</span>`).join('') : 
+                '<span style="color: #999;">なし</span>';
+                
+            document.getElementById('convenienceResults').innerHTML = 
+                gameState.allStolenItems.convenience.length ? 
+                gameState.allStolenItems.convenience.map(item => `<span>${item}</span>`).join('') : 
+                '<span style="color: #999;">なし</span>';
             
-            if (gameState.stolenVegetables.length === 0) {
-                container.textContent = 'なし';
-                container.style.color = '#666';
+            const totalCount = gameState.allStolenItems.vegetable.length + 
+                             gameState.allStolenItems.supermarket.length + 
+                             gameState.allStolenItems.convenience.length;
+            
+            document.getElementById('totalCount').textContent = totalCount;
+            
+            // カレー評価
+            let curryStatus = '';
+            if (totalCount >= 15) {
+                curryStatus = '🌟 完璧なカレーの材料が揃いました！';
+            } else if (totalCount >= 10) {
+                curryStatus = '😊 なかなか良いカレーが作れそうです！';
+            } else if (totalCount >= 5) {
+                curryStatus = '😅 質素なカレーになりそうです...';
             } else {
-                gameState.stolenVegetables.forEach(vegetable => {
-                    const item = document.createElement('span');
-                    item.textContent = vegetable;
-                    container.appendChild(item);
-                });
+                curryStatus = '😱 カレーを作るには材料が足りません！';
             }
+            
+            document.getElementById('curryStatus').textContent = curryStatus;
+            
+            showScreen('resultScreen');
         }
 
         // ゲームオーバー
@@ -628,34 +878,14 @@
             gameState.running = false;
             clearAllTimers();
             removeDragClone();
-            displayStolenVegetables('gameOverStolenItems');
             document.getElementById('gameOver').style.display = 'block';
-        }
-
-        // ゲーム終了
-        function endGame() {
-            gameState.running = false;
-            clearAllTimers();
-            removeDragClone();
-            displayStolenVegetables('gameCompleteStolenItems');
-            document.getElementById('gameComplete').style.display = 'block';
         }
 
         // ゲーム再開
         function restartGame() {
             clearAllTimers();
             removeDragClone();
-            
-            document.getElementById('gameOver').style.display = 'none';
-            document.getElementById('gameComplete').style.display = 'none';
-            document.getElementById('stolenItems').innerHTML = '';
-            
-            document.querySelectorAll('.vegetable').forEach(veg => veg.classList.remove('stolen'));
-            document.getElementById('walkArea').innerHTML = '';
-            document.getElementById('shopkeeperEye1').classList.remove('closed');
-            document.getElementById('shopkeeperEye2').classList.remove('closed');
-            
-            initGame();
+            showScreen('startScreen');
         }
 
         // UI更新
@@ -665,7 +895,16 @@
 
         // ゲーム開始
         setupTouchEvents();
-        initGame();
+        
+        // 初期化：スタート画面を表示
+        document.addEventListener('DOMContentLoaded', function() {
+            showScreen('startScreen');
+        });
+        
+        // ページ読み込み時に確実にスタート画面を表示
+        window.addEventListener('load', function() {
+            showScreen('startScreen');
+        });
     </script>
 </body>
 </html>
