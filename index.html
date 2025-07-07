@@ -2,32 +2,38 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>カレー泥棒ゲーム（横画面版）</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>カレー泥棒ゲーム（スマホ横画面版）</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         body {
-            font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #87CEEB, #98FB98);
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            touch-action: manipulation;
         }
 
         #gameContainer {
             position: relative;
             width: 100vw;
             height: 100vh;
-            max-height: 600px;
-            margin: 0 auto;
             background: #f0f8ff;
-            border: 2px solid #333;
+            overflow: hidden;
         }
 
         .screen {
@@ -43,7 +49,7 @@
             display: block !important;
         }
 
-        /* スタート画面 */
+        /* スタート画面 - スマホ横画面対応 */
         #startScreen {
             display: flex;
             flex-direction: column;
@@ -52,58 +58,108 @@
             background: linear-gradient(135deg, #FFB347, #FF6347);
             color: white;
             text-align: center;
+            padding: 20px;
         }
 
         #startScreen h1 {
-            font-size: 36px;
-            margin-bottom: 20px;
+            font-size: clamp(24px, 5vw, 32px);
+            margin-bottom: 15px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
         #startScreen p {
-            font-size: 18px;
-            margin-bottom: 30px;
-            line-height: 1.5;
+            font-size: clamp(14px, 2.5vw, 16px);
+            margin-bottom: 20px;
+            line-height: 1.4;
             max-width: 80%;
         }
 
         .start-button {
-            padding: 15px 30px;
-            font-size: 24px;
+            padding: 12px 24px;
+            font-size: clamp(16px, 3vw, 20px);
             background: #4CAF50;
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             transition: transform 0.1s ease;
+            touch-action: manipulation;
         }
 
-        .start-button:hover {
-            transform: scale(1.05);
+        .start-button:active {
+            transform: scale(0.95);
         }
 
-        /* 横画面レイアウト */
-        .shop-area {
-            position: absolute;
-            top: 50px;
-            left: 100px;
-            right: 100px;
-            height: 300px;
-            border: 3px solid #654321;
-            border-radius: 15px;
+        /* スマホ横画面レイアウト */
+        #gameScreen {
+            display: grid;
+            grid-template-areas: 
+                "ui shop shopkeepers"
+                "items items items"
+                "walk walk bag";
+            grid-template-rows: 60px 1fr 60px;
+            grid-template-columns: 180px 1fr 120px;
+            height: 100vh;
+            gap: 8px;
+            padding: 8px;
+            padding-left: max(8px, env(safe-area-inset-left));
+            padding-right: max(8px, env(safe-area-inset-right));
+        }
+
+        /* UI エリア - 左上 */
+        #gameUI {
+            grid-area: ui;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 8px;
+            border: 2px solid #333;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: bold;
         }
 
-        .shop-header {
-            position: relative;
-            height: 60px;
+        .ui-item {
+            margin-bottom: 4px;
+        }
+
+        .ui-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .stage-indicator {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 10px;
+            text-align: center;
+        }
+
+        .alert-indicator {
+            color: white;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .alert-indicator.safe { background: rgba(34, 139, 34, 0.8); }
+        .alert-indicator.caution { background: rgba(255, 140, 0, 0.8); }
+        .alert-indicator.warning { background: rgba(255, 69, 0, 0.8); }
+        .alert-indicator.danger { background: rgba(220, 20, 60, 0.8); }
+
+        /* 店タイトル - 上部中央 */
+        .shop-title-area {
+            grid-area: shop;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
+            justify-content: center;
         }
 
         .shop-title {
@@ -112,17 +168,22 @@
             border: 2px solid #333;
             border-radius: 20px;
             font-weight: bold;
-            font-size: 18px;
+            font-size: clamp(14px, 2.5vw, 18px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .shopkeepers {
+        /* 店員エリア - 右上 */
+        .shopkeepers-area {
+            grid-area: shopkeepers;
             display: flex;
-            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .shopkeeper {
-            width: 50px;
-            height: 60px;
+            width: 45px;
+            height: 50px;
             background: #FFE4B5;
             border: 2px solid #333;
             border-radius: 8px;
@@ -131,18 +192,19 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .name-tag {
             position: absolute;
-            top: 2px;
+            top: 1px;
             left: 50%;
             transform: translateX(-50%);
             background: white;
             border: 1px solid #333;
             border-radius: 3px;
-            padding: 1px 4px;
-            font-size: 8px;
+            padding: 1px 3px;
+            font-size: 7px;
             font-weight: bold;
             color: #333;
             z-index: 10;
@@ -150,13 +212,13 @@
 
         .eyes {
             display: flex;
-            gap: 6px;
-            margin-bottom: 8px;
+            gap: 5px;
+            margin-bottom: 6px;
         }
 
         .eye {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             background: black;
             border-radius: 50%;
             transition: all 0.5s ease;
@@ -167,37 +229,43 @@
             background: #333;
         }
 
+        /* アイテムエリア - 中央全幅 */
         .items-area {
-            flex: 1;
-            padding: 20px;
+            grid-area: items;
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            border: 3px solid #654321;
+            border-radius: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
         }
 
         .items {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            max-width: 400px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+            max-width: 90%;
         }
 
         .item {
-            width: 70px;
-            height: 70px;
+            width: clamp(50px, 8vw, 70px);
+            height: clamp(50px, 8vw, 70px);
             border: 3px solid #333;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
+            font-size: clamp(24px, 5vw, 32px);
             cursor: pointer;
             background: white;
             transition: transform 0.1s ease;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            touch-action: manipulation;
         }
 
         .item:active {
-            transform: scale(0.95);
+            transform: scale(0.9);
         }
 
         .item.stolen {
@@ -205,7 +273,7 @@
             pointer-events: none;
         }
 
-        /* エリア別スタイル */
+        /* エリア別背景 */
         .vegetable-shop {
             background: linear-gradient(135deg, #8B4513, #A0522D);
         }
@@ -218,113 +286,56 @@
             background: linear-gradient(135deg, #32CD32, #90EE90);
         }
 
-        /* UI配置 */
-        #gameUI {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 12px;
-            border-radius: 10px;
-            border: 2px solid #333;
-            z-index: 100;
-            min-width: 180px;
-        }
-
-        .ui-item {
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-
-        .ui-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .stage-indicator {
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            display: inline-block;
-        }
-
-        .alert-indicator {
-            color: white;
-            padding: 4px 8px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-            display: inline-block;
-        }
-
-        .alert-indicator.safe {
-            background: rgba(34, 139, 34, 0.8);
-        }
-
-        .alert-indicator.caution {
-            background: rgba(255, 140, 0, 0.8);
-        }
-
-        .alert-indicator.warning {
-            background: rgba(255, 69, 0, 0.8);
-        }
-
-        .alert-indicator.danger {
-            background: rgba(220, 20, 60, 0.8);
-        }
-
-        /* 通行人エリア */
+        /* 通行人エリア - 下部 */
         #walkArea {
-            position: absolute;
-            bottom: 120px;
-            left: 0;
-            right: 0;
-            height: 80px;
-            background: #90EE90;
-            border-top: 2px solid #333;
-            border-bottom: 2px solid #333;
+            grid-area: walk;
+            background: linear-gradient(90deg, #90EE90, #98FB98);
+            border: 2px solid #333;
+            border-radius: 8px;
             overflow: hidden;
-            display: flex;
-            align-items: center;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .pedestrian {
             position: absolute;
-            width: 50px;
-            height: 65px;
+            width: 40px;
+            height: 50px;
             background: #87CEEB;
             border: 2px solid #333;
-            border-radius: 8px;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            top: 50%;
+            transform: translateY(-50%);
             animation: walkLeft 8s linear infinite;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         @keyframes walkLeft {
             from { left: 100%; }
-            to { left: -80px; }
+            to { left: -60px; }
         }
 
         .pedestrian-item {
             position: absolute;
-            top: -20px;
+            top: -18px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             background: white;
             border: 2px solid #333;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            touch-action: manipulation;
         }
 
         .pedestrian-item.stolen {
@@ -332,14 +343,10 @@
             pointer-events: none;
         }
 
-        /* 泥棒袋 */
+        /* 泥棒袋 - 右下 */
         #thiefBag {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            width: 100px;
-            height: 100px;
-            background: #8B4513;
+            grid-area: bag;
+            background: radial-gradient(circle, #8B4513, #654321);
             border: 3px solid #333;
             border-radius: 50%;
             display: flex;
@@ -350,18 +357,21 @@
             font-size: 12px;
             color: white;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            margin: 8px;
         }
 
         .stolen-items {
             display: flex;
             flex-wrap: wrap;
-            gap: 3px;
+            gap: 2px;
             margin-top: 4px;
-            font-size: 12px;
+            font-size: 10px;
             max-width: 80px;
             justify-content: center;
         }
 
+        /* ゲームオーバー表示 */
         #gameOver {
             position: absolute;
             top: 50%;
@@ -369,77 +379,79 @@
             transform: translate(-50%, -50%);
             background: rgba(255, 140, 0, 0.95);
             color: white;
-            padding: 30px;
+            padding: 20px;
             border-radius: 15px;
             text-align: center;
-            font-size: 24px;
+            font-size: clamp(18px, 4vw, 24px);
             font-weight: bold;
             display: none;
             z-index: 1000;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
         }
 
-        /* 結果画面 */
+        /* 結果画面 - スマホ横画面対応 */
         #resultScreen {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             background: linear-gradient(135deg, #FFD700, #FFA500);
             color: white;
             text-align: center;
-            padding: 20px;
+            padding: 15px;
             overflow-y: auto;
         }
 
         .result-title {
-            font-size: 28px;
-            margin-bottom: 20px;
+            font-size: clamp(20px, 4vw, 28px);
+            margin-bottom: 15px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
         .result-sections {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 15px;
         }
 
         .result-section {
             background: rgba(255, 255, 255, 0.9);
             color: #333;
-            padding: 15px;
-            border-radius: 10px;
-            min-width: 180px;
-            max-width: 250px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
         }
 
         .result-section h3 {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: #8B4513;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .result-items {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 4px;
             justify-content: center;
-            font-size: 20px;
+            font-size: 16px;
         }
 
         .final-result {
             background: rgba(255, 255, 255, 0.9);
             color: #333;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             max-width: 400px;
+            width: 100%;
         }
 
         .restart-button {
-            padding: 12px 24px;
-            font-size: 18px;
+            padding: 10px 20px;
+            font-size: 16px;
             background: #4CAF50;
             color: white;
             border: none;
@@ -447,6 +459,11 @@
             cursor: pointer;
             font-weight: bold;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            touch-action: manipulation;
+        }
+
+        .restart-button:active {
+            transform: scale(0.95);
         }
 
         .drag-clone {
@@ -457,32 +474,56 @@
             transform: translate(-50%, -50%);
         }
 
-        /* レスポンシブ調整 */
-        @media (max-width: 768px) {
-            .shop-area {
-                left: 20px;
-                right: 20px;
-                height: 250px;
+        /* スマホの安全領域対応 */
+        @supports (padding: max(0px)) {
+            #gameScreen {
+                padding-left: max(8px, env(safe-area-inset-left));
+                padding-right: max(8px, env(safe-area-inset-right));
+                padding-top: max(8px, env(safe-area-inset-top));
+                padding-bottom: max(8px, env(safe-area-inset-bottom));
+            }
+        }
+
+        /* 縦画面での警告 */
+        @media (orientation: portrait) {
+            #gameContainer::before {
+                content: "📱 画面を横向きにしてください";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                font-size: 18px;
+                text-align: center;
+                z-index: 10000;
             }
             
-            .items {
-                gap: 15px;
+            .screen {
+                filter: blur(5px);
+                pointer-events: none;
+            }
+        }
+
+        /* 小さな画面での調整 */
+        @media (max-height: 400px) {
+            #gameScreen {
+                grid-template-rows: 50px 1fr 50px;
+                gap: 5px;
+                padding: 5px;
             }
             
             .item {
-                width: 60px;
-                height: 60px;
-                font-size: 28px;
+                width: clamp(40px, 7vw, 55px);
+                height: clamp(40px, 7vw, 55px);
+                font-size: clamp(20px, 4vw, 26px);
             }
             
-            #gameUI {
-                font-size: 14px;
-                min-width: 160px;
-            }
-            
-            .result-sections {
-                flex-direction: column;
-                align-items: center;
+            .shopkeeper {
+                width: 35px;
+                height: 40px;
             }
         }
     </style>
@@ -493,7 +534,7 @@
         <div id="startScreen" class="screen active">
             <h1>🍛 カレー泥棒ゲーム 🍛</h1>
             <p>
-                横画面でカレーの材料を集めましょう！<br>
+                スマホを横向きにしてプレイ！<br>
                 八百屋、スーパー、コンビニを各20秒ずつ回って<br>
                 見つからないように材料を盗みましょう！
             </p>
@@ -502,9 +543,9 @@
 
         <!-- ゲーム画面 -->
         <div id="gameScreen" class="screen">
-            <!-- UI エリア -->
+            <!-- UI エリア（左上） -->
             <div id="gameUI">
-                <div class="ui-item">時間: <span id="timeLeft">20</span>秒</div>
+                <div class="ui-item">⏰ <span id="timeLeft">20</span>秒</div>
                 <div class="ui-item">
                     <div class="stage-indicator" id="stageIndicator">八百屋 (1/3)</div>
                 </div>
@@ -513,43 +554,42 @@
                 </div>
             </div>
 
-            <!-- 店エリア -->
-            <div id="shopArea" class="shop-area vegetable-shop">
-                <!-- 店ヘッダー（タイトルと店員） -->
-                <div class="shop-header">
-                    <div id="shopTitle" class="shop-title">八百屋エリア</div>
-                    <div class="shopkeepers">
-                        <!-- メイン店員 -->
-                        <div id="shopkeeper" class="shopkeeper">
-                            <div class="eyes">
-                                <div class="eye" id="shopkeeperEye1"></div>
-                                <div class="eye" id="shopkeeperEye2"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- 追加店員 -->
-                        <div id="secondShopkeeper" class="shopkeeper" style="display: none;">
-                            <div class="name-tag">新人</div>
-                            <div class="eyes">
-                                <div class="eye" id="secondShopkeeperEye1"></div>
-                                <div class="eye" id="secondShopkeeperEye2"></div>
-                            </div>
-                        </div>
+            <!-- 店タイトル（上部中央） -->
+            <div class="shop-title-area">
+                <div id="shopTitle" class="shop-title">八百屋エリア</div>
+            </div>
+
+            <!-- 店員エリア（右上） -->
+            <div class="shopkeepers-area">
+                <!-- メイン店員 -->
+                <div id="shopkeeper" class="shopkeeper">
+                    <div class="eyes">
+                        <div class="eye" id="shopkeeperEye1"></div>
+                        <div class="eye" id="shopkeeperEye2"></div>
                     </div>
                 </div>
                 
-                <!-- アイテムエリア -->
-                <div class="items-area">
-                    <div id="items" class="items">
-                        <!-- アイテムは動的に生成 -->
+                <!-- 追加店員 -->
+                <div id="secondShopkeeper" class="shopkeeper" style="display: none;">
+                    <div class="name-tag">新人</div>
+                    <div class="eyes">
+                        <div class="eye" id="secondShopkeeperEye1"></div>
+                        <div class="eye" id="secondShopkeeperEye2"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 通行人エリア -->
+            <!-- アイテムエリア（中央全幅） -->
+            <div id="itemsArea" class="items-area vegetable-shop">
+                <div id="items" class="items">
+                    <!-- アイテムは動的に生成 -->
+                </div>
+            </div>
+
+            <!-- 通行人エリア（下部） -->
             <div id="walkArea"></div>
 
-            <!-- 泥棒袋 -->
+            <!-- 泥棒袋（右下） -->
             <div id="thiefBag">
                 <div>袋</div>
                 <div class="stolen-items" id="stolenItems"></div>
@@ -568,17 +608,17 @@
             
             <div class="result-sections">
                 <div class="result-section">
-                    <h3>🥕 八百屋エリア</h3>
+                    <h3>🥕 八百屋</h3>
                     <div class="result-items" id="vegetableResults"></div>
                 </div>
                 
                 <div class="result-section">
-                    <h3>🛒 スーパーエリア</h3>
+                    <h3>🛒 スーパー</h3>
                     <div class="result-items" id="supermarketResults"></div>
                 </div>
                 
                 <div class="result-section">
-                    <h3>🏪 コンビニエリア</h3>
+                    <h3>🏪 コンビニ</h3>
                     <div class="result-items" id="convenienceResults"></div>
                 </div>
             </div>
@@ -688,8 +728,8 @@
             document.getElementById('stageIndicator').textContent = `${stage.name} (${gameState.currentStage + 1}/3)`;
             
             // エリアスタイル変更
-            const shopArea = document.getElementById('shopArea');
-            shopArea.className = `shop-area ${stage.className}`;
+            const itemsArea = document.getElementById('itemsArea');
+            itemsArea.className = `items-area ${stage.className}`;
             
             // アイテム配置
             setupItems(stage.items);
