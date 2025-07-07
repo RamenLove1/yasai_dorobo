@@ -2,46 +2,39 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>カレー泥棒ゲーム（スマホ横画面版）</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カレー泥棒ゲーム（横画面版）</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             user-select: none;
-            -webkit-user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        html, body {
-            height: 100%;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         body {
+            font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #87CEEB, #98FB98);
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            touch-action: none;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            overscroll-behavior: none;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
         }
 
         #gameContainer {
             position: relative;
-            width: 100vw;
-            height: 100vh;
+            width: 100vh;
+            height: 100vw;
+            max-height: 600px;
+            max-width: 900px;
+            margin: 0 auto;
             background: #f0f8ff;
-            overflow: hidden;
-            touch-action: none;
-            -webkit-touch-callout: none;
+            border: 2px solid #333;
+            transform: rotate(90deg);
+            transform-origin: center center;
+            top: 50%;
+            left: 50%;
+            margin-left: -50vh;
+            margin-top: -50vw;
         }
 
         .screen {
@@ -57,7 +50,7 @@
             display: block !important;
         }
 
-        /* スタート画面 - スマホ横画面対応 */
+        /* スタート画面 */
         #startScreen {
             display: flex;
             flex-direction: column;
@@ -66,167 +59,107 @@
             background: linear-gradient(135deg, #FFB347, #FF6347);
             color: white;
             text-align: center;
-            padding: 20px;
         }
 
         #startScreen h1 {
-            font-size: clamp(24px, 5vw, 32px);
-            margin-bottom: 15px;
+            font-size: 36px;
+            margin-bottom: 20px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
         #startScreen p {
-            font-size: clamp(14px, 2.5vw, 16px);
-            margin-bottom: 20px;
-            line-height: 1.4;
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.5;
             max-width: 80%;
         }
 
         .start-button {
-            padding: 12px 24px;
-            font-size: clamp(16px, 3vw, 20px);
+            padding: 15px 30px;
+            font-size: 24px;
             background: #4CAF50;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             transition: transform 0.1s ease;
-            touch-action: manipulation;
         }
 
-        .start-button:active {
-            transform: scale(0.95);
+        .start-button:hover {
+            transform: scale(1.05);
         }
 
-        /* スマホ横画面レイアウト */
-        #gameScreen {
-            display: grid;
-            grid-template-areas: 
-                "ui shop shopkeepers"
-                "items items items"
-                "walk walk bag";
-            grid-template-rows: 60px 1fr 60px;
-            grid-template-columns: 180px 1fr 120px;
-            height: 100vh;
-            gap: 8px;
-            padding: 8px;
-            padding-left: max(8px, env(safe-area-inset-left));
-            padding-right: max(8px, env(safe-area-inset-right));
-        }
-
-        /* UI エリア - 左上 */
-        #gameUI {
-            grid-area: ui;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 8px;
-            border-radius: 8px;
-            border: 2px solid #333;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .ui-item {
-            margin-bottom: 4px;
-        }
-
-        .ui-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .stage-indicator {
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 10px;
-            text-align: center;
-        }
-
-        .alert-indicator {
-            color: white;
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-size: 10px;
-            font-weight: bold;
-            text-align: center;
-            transition: background-color 0.3s ease;
-        }
-
-        .alert-indicator.safe { background: rgba(34, 139, 34, 0.8); }
-        .alert-indicator.caution { background: rgba(255, 140, 0, 0.8); }
-        .alert-indicator.warning { background: rgba(255, 69, 0, 0.8); }
-        .alert-indicator.danger { background: rgba(220, 20, 60, 0.8); }
-
-        /* 店タイトル - 上部中央 */
-        .shop-title-area {
-            grid-area: shop;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* ゲーム画面 - 横画面レイアウト */
+        .shop-area {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 250px;
+            height: 200px;
+            border: 3px solid #654321;
+            border-radius: 10px;
         }
 
         .shop-title {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
             background: white;
-            padding: 8px 20px;
+            padding: 5px 15px;
             border: 2px solid #333;
-            border-radius: 20px;
+            border-radius: 15px;
             font-weight: bold;
-            font-size: clamp(14px, 2.5vw, 18px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        /* 店員エリア - 右上 */
-        .shopkeepers-area {
-            grid-area: shopkeepers;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            font-size: 14px;
         }
 
         .shopkeeper {
-            width: 45px;
-            height: 50px;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 50px;
+            height: 70px;
             background: #FFE4B5;
             border: 2px solid #333;
-            border-radius: 8px;
+            border-radius: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            position: relative;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .second-shopkeeper {
+            top: 100px;
+            right: 15px;
         }
 
         .name-tag {
             position: absolute;
-            top: 1px;
+            top: 5px;
             left: 50%;
             transform: translateX(-50%);
             background: white;
             border: 1px solid #333;
-            border-radius: 3px;
-            padding: 1px 3px;
-            font-size: 7px;
+            border-radius: 4px;
+            padding: 1px 4px;
+            font-size: 8px;
             font-weight: bold;
             color: #333;
             z-index: 10;
+            white-space: nowrap;
         }
 
         .eyes {
             display: flex;
-            gap: 5px;
-            margin-bottom: 6px;
+            gap: 6px;
+            margin-bottom: 8px;
         }
 
         .eye {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             background: black;
             border-radius: 50%;
             transition: all 0.5s ease;
@@ -237,57 +170,32 @@
             background: #333;
         }
 
-        /* アイテムエリア - 中央全幅 */
-        .items-area {
-            grid-area: items;
-            background: linear-gradient(135deg, #8B4513, #A0522D);
-            border: 3px solid #654321;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
-        }
-
         .items {
+            position: absolute;
+            top: 20px;
+            left: 20px;
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 15px;
-            max-width: 90%;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 240px;
         }
 
         .item {
-            width: clamp(50px, 8vw, 70px);
-            height: clamp(50px, 8vw, 70px);
+            width: 50px;
+            height: 50px;
             border: 3px solid #333;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: clamp(24px, 5vw, 32px);
+            font-size: 24px;
             cursor: pointer;
             background: white;
-            transition: transform 0.1s ease, opacity 0.1s ease;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-            position: relative;
-        }
-
-        .item::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            background: transparent;
-            border-radius: 20px;
+            transition: transform 0.1s ease;
         }
 
         .item:active {
-            transform: scale(0.9);
+            transform: scale(0.95);
         }
 
         .item.stolen {
@@ -295,60 +203,55 @@
             pointer-events: none;
         }
 
-        .item.dragging {
-            opacity: 0.5;
-            transform: scale(1.1);
-        }
-
-        /* エリア別背景 */
+        /* 八百屋 */
         .vegetable-shop {
-            background: linear-gradient(135deg, #8B4513, #A0522D);
+            background: #8B4513;
         }
 
+        /* スーパー */
         .supermarket {
-            background: linear-gradient(135deg, #4169E1, #6495ED);
+            background: #4169E1;
         }
 
+        /* コンビニ */
         .convenience {
-            background: linear-gradient(135deg, #32CD32, #90EE90);
+            background: #32CD32;
         }
 
-        /* 通行人エリア - 下部 */
         #walkArea {
-            grid-area: walk;
-            background: linear-gradient(90deg, #90EE90, #98FB98);
-            border: 2px solid #333;
-            border-radius: 8px;
+            position: absolute;
+            bottom: 100px;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: #90EE90;
+            border-top: 2px solid #333;
             overflow: hidden;
-            position: relative;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            padding-top: 15px;
         }
 
         .pedestrian {
             position: absolute;
-            width: 40px;
-            height: 50px;
+            width: 50px;
+            height: 60px;
             background: #87CEEB;
             border: 2px solid #333;
-            border-radius: 6px;
+            border-radius: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            top: 50%;
-            transform: translateY(-50%);
-            animation: walkLeft 8s linear infinite;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            animation: walkRight 8s linear infinite;
         }
 
-        @keyframes walkLeft {
-            from { left: 100%; }
-            to { left: -60px; }
+        @keyframes walkRight {
+            from { left: -70px; }
+            to { left: 100%; }
         }
 
         .pedestrian-item {
             position: absolute;
-            top: -18px;
+            top: -20px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 16px;
@@ -356,27 +259,12 @@
             background: white;
             border: 2px solid #333;
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-            position: relative;
-        }
-
-        .pedestrian-item::before {
-            content: '';
-            position: absolute;
-            top: -8px;
-            left: -8px;
-            right: -8px;
-            bottom: -8px;
-            background: transparent;
-            border-radius: 50%;
         }
 
         .pedestrian-item.stolen {
@@ -384,53 +272,36 @@
             pointer-events: none;
         }
 
-        .pedestrian-item.dragging {
-            opacity: 0.5;
-            transform: translateX(-50%) scale(1.2);
-        }
-
-        /* 泥棒袋 - 右下 */
         #thiefBag {
-            grid-area: bag;
-            background: radial-gradient(circle, #8B4513, #654321);
-            border: 3px solid #333;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 120px;
+            background: #8B4513;
+            border: 4px solid #333;
             border-radius: 50%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 12px;
-            color: white;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-            margin: 8px;
-            position: relative;
+            font-size: 14px;
         }
 
-        #thiefBag::before {
-            content: '';
+        #gameUI {
             position: absolute;
-            top: -20px;
-            left: -20px;
-            right: -20px;
-            bottom: -20px;
-            background: transparent;
-            border-radius: 50%;
-            z-index: -1;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            z-index: 100;
+            font-size: 12px;
         }
 
-        .stolen-items {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2px;
-            margin-top: 4px;
-            font-size: 10px;
-            max-width: 80px;
-            justify-content: center;
-        }
-
-        /* ゲームオーバー表示 */
         #gameOver {
             position: absolute;
             top: 50%;
@@ -438,50 +309,40 @@
             transform: translate(-50%, -50%);
             background: rgba(255, 140, 0, 0.95);
             color: white;
-            padding: 20px;
+            padding: 25px;
             border-radius: 15px;
             text-align: center;
-            font-size: clamp(18px, 4vw, 24px);
+            font-size: 20px;
             font-weight: bold;
             display: none;
             z-index: 1000;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
         }
 
-        /* 結果画面 - スマホ横画面対応 */
         #resultScreen {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             background: linear-gradient(135deg, #FFD700, #FFA500);
             color: white;
             text-align: center;
-            padding: 15px;
-            overflow-y: auto;
+            padding: 20px;
         }
 
         .result-title {
-            font-size: clamp(20px, 4vw, 28px);
+            font-size: 28px;
             margin-bottom: 15px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .result-sections {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            width: 100%;
-            max-width: 600px;
-            margin-bottom: 15px;
         }
 
         .result-section {
             background: rgba(255, 255, 255, 0.9);
             color: #333;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 12px;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 300px;
         }
 
         .result-section h3 {
@@ -493,23 +354,14 @@
         .result-items {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px;
+            gap: 6px;
             justify-content: center;
-            font-size: 16px;
-        }
-
-        .final-result {
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            max-width: 400px;
-            width: 100%;
+            font-size: 20px;
         }
 
         .restart-button {
-            padding: 10px 20px;
+            margin-top: 15px;
+            padding: 8px 16px;
             font-size: 16px;
             background: #4CAF50;
             color: white;
@@ -517,12 +369,14 @@
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            touch-action: manipulation;
         }
 
-        .restart-button:active {
-            transform: scale(0.95);
+        .stolen-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+            font-size: 12px;
         }
 
         .drag-clone {
@@ -533,56 +387,47 @@
             transform: translate(-50%, -50%);
         }
 
-        /* スマホの安全領域対応 */
-        @supports (padding: max(0px)) {
-            #gameScreen {
-                padding-left: max(8px, env(safe-area-inset-left));
-                padding-right: max(8px, env(safe-area-inset-right));
-                padding-top: max(8px, env(safe-area-inset-top));
-                padding-bottom: max(8px, env(safe-area-inset-bottom));
-            }
+        .stage-indicator {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            margin-top: 3px;
+            font-size: 10px;
+            font-weight: bold;
         }
 
-        /* 縦画面での横向き表示 */
-        @media (orientation: portrait) {
+        .alert-indicator {
+            color: white;
+            padding: 3px 6px;
+            border-radius: 8px;
+            margin-top: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .alert-indicator.safe {
+            background: rgba(34, 139, 34, 0.8);
+        }
+
+        .alert-indicator.caution {
+            background: rgba(255, 140, 0, 0.8);
+        }
+
+        .alert-indicator.warning {
+            background: rgba(255, 69, 0, 0.8);
+        }
+
+        .alert-indicator.danger {
+            background: rgba(220, 20, 60, 0.8);
+        }
+
+        /* モバイル対応 */
+        @media (max-width: 768px) {
             #gameContainer {
-                transform: rotate(90deg);
-                transform-origin: center center;
-                width: 100vh;
-                height: 100vw;
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                margin-top: calc(-100vw / 2);
-                margin-left: calc(-100vh / 2);
-            }
-            
-            /* タッチ座標の補正 */
-            body {
-                overflow: hidden;
-                position: fixed;
-                width: 100%;
-                height: 100%;
-            }
-        }
-
-        /* 小さな画面での調整 */
-        @media (max-height: 400px), (orientation: portrait) and (max-width: 400px) {
-            #gameScreen {
-                grid-template-rows: 50px 1fr 50px;
-                gap: 5px;
-                padding: 5px;
-            }
-            
-            .item {
-                width: clamp(40px, 7vw, 55px);
-                height: clamp(40px, 7vw, 55px);
-                font-size: clamp(20px, 4vw, 26px);
-            }
-            
-            .shopkeeper {
-                width: 35px;
-                height: 40px;
+                max-height: 500px;
+                max-width: 750px;
             }
         }
     </style>
@@ -593,43 +438,25 @@
         <div id="startScreen" class="screen active">
             <h1>🍛 カレー泥棒ゲーム 🍛</h1>
             <p>
-                縦画面のままでも横向きで表示されます！<br>
+                カレーの材料を集めましょう！<br>
                 八百屋、スーパー、コンビニを各20秒ずつ回って<br>
-                見つからないように材料を盗みましょう！
+                見つからないように材料を盗みましょう！<br>
+                <strong>（横画面版）</strong>
             </p>
             <button class="start-button" onclick="startGame()">ゲーム開始</button>
         </div>
 
         <!-- ゲーム画面 -->
-        <div id="gameScreen" class="screen">
-            <!-- UI エリア（左上） -->
-            <div id="gameUI">
-                <div class="ui-item">⏰ <span id="timeLeft">20</span>秒</div>
-                <div class="ui-item">
-                    <div class="stage-indicator" id="stageIndicator">八百屋 (1/3)</div>
-                </div>
-                <div class="ui-item">
-                    <div class="alert-indicator safe" id="alertIndicator">警戒度: 0/20</div>
-                </div>
-            </div>
-
-            <!-- 店タイトル（上部中央） -->
-            <div class="shop-title-area">
+        <div id="gameScreen" class="screen" style="display: none;">
+            <div id="shopArea" class="shop-area vegetable-shop">
                 <div id="shopTitle" class="shop-title">八百屋エリア</div>
-            </div>
-
-            <!-- 店員エリア（右上） -->
-            <div class="shopkeepers-area">
-                <!-- メイン店員 -->
                 <div id="shopkeeper" class="shopkeeper">
                     <div class="eyes">
                         <div class="eye" id="shopkeeperEye1"></div>
                         <div class="eye" id="shopkeeperEye2"></div>
                     </div>
                 </div>
-                
-                <!-- 追加店員 -->
-                <div id="secondShopkeeper" class="shopkeeper" style="display: none;">
+                <div id="secondShopkeeper" class="shopkeeper second-shopkeeper" style="display: none;">
                     <div class="name-tag">新人</div>
                     <div class="eyes">
                         <div class="eye" id="secondShopkeeperEye1"></div>
@@ -638,23 +465,23 @@
                 </div>
             </div>
 
-            <!-- アイテムエリア（中央全幅） -->
-            <div id="itemsArea" class="items-area vegetable-shop">
-                <div id="items" class="items">
-                    <!-- アイテムは動的に生成 -->
-                </div>
+            <div id="items" class="items">
+                <!-- アイテムは動的に生成 -->
             </div>
 
-            <!-- 通行人エリア（下部） -->
             <div id="walkArea"></div>
 
-            <!-- 泥棒袋（右下） -->
             <div id="thiefBag">
-                <div>袋</div>
+                <div>泥棒袋</div>
                 <div class="stolen-items" id="stolenItems"></div>
             </div>
 
-            <!-- ゲームオーバー表示 -->
+            <div id="gameUI">
+                <div>時間: <span id="timeLeft">20</span>秒</div>
+                <div class="stage-indicator" id="stageIndicator">八百屋 (1/3)</div>
+                <div class="alert-indicator safe" id="alertIndicator">警戒度: 0/20</div>
+            </div>
+
             <div id="gameOver">
                 <div id="gameOverMessage">見つかってしまいました！</div>
                 <div id="gameOverSubMessage">集めたアイテムが没収されます...</div>
@@ -662,27 +489,25 @@
         </div>
 
         <!-- 結果画面 -->
-        <div id="resultScreen" class="screen">
+        <div id="resultScreen" class="screen" style="display: none;">
             <div class="result-title">🍛 カレー泥棒 結果発表 🍛</div>
             
-            <div class="result-sections">
-                <div class="result-section">
-                    <h3>🥕 八百屋</h3>
-                    <div class="result-items" id="vegetableResults"></div>
-                </div>
-                
-                <div class="result-section">
-                    <h3>🛒 スーパー</h3>
-                    <div class="result-items" id="supermarketResults"></div>
-                </div>
-                
-                <div class="result-section">
-                    <h3>🏪 コンビニ</h3>
-                    <div class="result-items" id="convenienceResults"></div>
-                </div>
+            <div class="result-section">
+                <h3>🥕 八百屋エリア</h3>
+                <div class="result-items" id="vegetableResults"></div>
             </div>
             
-            <div class="final-result">
+            <div class="result-section">
+                <h3>🛒 スーパーエリア</h3>
+                <div class="result-items" id="supermarketResults"></div>
+            </div>
+            
+            <div class="result-section">
+                <h3>🏪 コンビニエリア</h3>
+                <div class="result-items" id="convenienceResults"></div>
+            </div>
+            
+            <div class="result-section">
                 <h3>📊 総合結果</h3>
                 <div>合計アイテム数: <span id="totalCount">0</span>個</div>
                 <div id="curryStatus"></div>
@@ -693,7 +518,7 @@
     </div>
 
     <script>
-        // ゲーム状態管理
+        // ゲーム状態（元のコードと同じ）
         const gameState = {
             running: false,
             timeLeft: 20,
@@ -721,7 +546,7 @@
             }
         };
 
-        // エリアデータ
+        // 各エリアのアイテム（元のコードと同じ）
         const stageData = {
             0: {
                 name: '八百屋',
@@ -749,29 +574,17 @@
             }
         };
 
-        // 画面切り替え
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-                screen.style.display = 'none';
-            });
-            
-            const targetScreen = document.getElementById(screenId);
-            if (targetScreen) {
-                targetScreen.classList.add('active');
-                targetScreen.style.display = 'block';
-            }
-        }
-
         // ゲーム開始
         function startGame() {
             showScreen('gameScreen');
             gameState.currentStage = 0;
             gameState.alertLevel = 0;
             gameState.secondShopkeeperVisible = false;
+            gameState.secondShopkeeperWatching = true;
             gameState.allStolenItems = { vegetable: [], supermarket: [], convenience: [] };
             
             document.getElementById('secondShopkeeper').style.display = 'none';
+            
             setupStage();
         }
 
@@ -782,15 +595,12 @@
             
             const stage = stageData[gameState.currentStage];
             
-            // UI更新
             document.getElementById('shopTitle').textContent = stage.title;
             document.getElementById('stageIndicator').textContent = `${stage.name} (${gameState.currentStage + 1}/3)`;
             
-            // エリアスタイル変更
-            const itemsArea = document.getElementById('itemsArea');
-            itemsArea.className = `items-area ${stage.className}`;
+            const shopArea = document.getElementById('shopArea');
+            shopArea.className = `shop-area ${stage.className}`;
             
-            // アイテム配置
             setupItems(stage.items);
             
             updateUI();
@@ -811,6 +621,20 @@
             });
         }
 
+        // 画面切り替え
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+                screen.style.display = 'none';
+            });
+            
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+                targetScreen.style.display = 'block';
+            }
+        }
+
         // ゲーム状態リセット
         function resetGameState() {
             gameState.running = true;
@@ -821,7 +645,6 @@
             gameState.pedestrians = [];
             gameState.dragData = { element: null, clone: null, startPos: { x: 0, y: 0 } };
             
-            // UI リセット
             document.getElementById('stolenItems').innerHTML = '';
             document.getElementById('walkArea').innerHTML = '';
             document.getElementById('gameOver').style.display = 'none';
@@ -830,7 +653,6 @@
             document.getElementById('secondShopkeeperEye1').classList.remove('closed');
             document.getElementById('secondShopkeeperEye2').classList.remove('closed');
             
-            // 追加店員表示状態更新
             if (gameState.secondShopkeeperVisible) {
                 document.getElementById('secondShopkeeper').style.display = 'flex';
             } else {
@@ -840,7 +662,7 @@
             updateAlertLevelUI();
         }
 
-        // 警戒度に応じた瞬きタイミング計算
+        // 警戒度に応じた瞬きタイミングを計算
         function getBlinkTimings() {
             const alertRatio = Math.min(gameState.alertLevel / 20, 1);
             
@@ -874,7 +696,6 @@
                 }
             }
             
-            // 警戒度10で追加店員表示
             if (gameState.alertLevel >= 10 && !gameState.secondShopkeeperVisible) {
                 gameState.secondShopkeeperVisible = true;
                 document.getElementById('secondShopkeeper').style.display = 'flex';
@@ -923,38 +744,6 @@
             }
         }
 
-        // メイン店員の瞬き
-        function startShopkeeperBlinking() {
-            function blink() {
-                if (!gameState.running) return;
-                
-                const timings = getBlinkTimings();
-                
-                gameState.timers.shopkeeper = setTimeout(() => {
-                    if (!gameState.running) return;
-                    
-                    gameState.shopkeeperWatching = false;
-                    document.getElementById('shopkeeperEye1').classList.add('closed');
-                    document.getElementById('shopkeeperEye2').classList.add('closed');
-                    
-                    gameState.timers.shopkeeper = setTimeout(() => {
-                        if (!gameState.running) return;
-                        
-                        document.getElementById('shopkeeperEye1').classList.remove('closed');
-                        document.getElementById('shopkeeperEye2').classList.remove('closed');
-                        
-                        setTimeout(() => {
-                            if (!gameState.running) return;
-                            gameState.shopkeeperWatching = true;
-                        }, 500);
-                        
-                        blink();
-                    }, timings.openTime);
-                }, timings.closeTime);
-            }
-            blink();
-        }
-
         // 追加店員の瞬き
         function startSecondShopkeeperBlinking() {
             function blink() {
@@ -989,6 +778,37 @@
             blink();
         }
 
+        function startShopkeeperBlinking() {
+            function blink() {
+                if (!gameState.running) return;
+                
+                const timings = getBlinkTimings();
+                
+                gameState.timers.shopkeeper = setTimeout(() => {
+                    if (!gameState.running) return;
+                    
+                    gameState.shopkeeperWatching = false;
+                    document.getElementById('shopkeeperEye1').classList.add('closed');
+                    document.getElementById('shopkeeperEye2').classList.add('closed');
+                    
+                    gameState.timers.shopkeeper = setTimeout(() => {
+                        if (!gameState.running) return;
+                        
+                        document.getElementById('shopkeeperEye1').classList.remove('closed');
+                        document.getElementById('shopkeeperEye2').classList.remove('closed');
+                        
+                        setTimeout(() => {
+                            if (!gameState.running) return;
+                            gameState.shopkeeperWatching = true;
+                        }, 500);
+                        
+                        blink();
+                    }, timings.openTime);
+                }, timings.closeTime);
+            }
+            blink();
+        }
+
         // 通行人生成
         function startPedestrianSpawning() {
             createPedestrian();
@@ -1016,10 +836,9 @@
                 pedestrian[id] = eye;
             });
 
-            // アイテム選択
             let item;
             if (gameState.currentStage === 1 && Math.random() < 0.03) {
-                item = '💎'; // スーパーで3%の確率でダイアモンド
+                item = '💎';
             } else {
                 const items = stage.pedestrianItems;
                 item = items[Math.floor(Math.random() * items.length)];
@@ -1092,40 +911,12 @@
             container.addEventListener('mouseup', handleTouchEnd);
         }
 
-        // 縦画面での座標変換
-        function transformCoordinates(clientX, clientY) {
-            if (window.innerHeight > window.innerWidth) {
-                // 縦画面の場合、座標を90度回転変換
-                const centerX = window.innerWidth / 2;
-                const centerY = window.innerHeight / 2;
-                
-                // 中心を原点とした座標に変換
-                const relativeX = clientX - centerX;
-                const relativeY = clientY - centerY;
-                
-                // 90度回転（時計回り）
-                const rotatedX = relativeY;
-                const rotatedY = -relativeX;
-                
-                // 回転後の画面サイズに合わせて調整
-                const newCenterX = window.innerHeight / 2;
-                const newCenterY = window.innerWidth / 2;
-                
-                return {
-                    x: rotatedX + newCenterX,
-                    y: rotatedY + newCenterY
-                };
-            }
-            return { x: clientX, y: clientY };
-        }
-
         // タッチ開始
         function handleTouchStart(e) {
             if (!gameState.running) return;
             
             const touch = e.touches ? e.touches[0] : e;
-            const coords = transformCoordinates(touch.clientX, touch.clientY);
-            const target = document.elementFromPoint(coords.x, coords.y);
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
             
             if (!isValidItem(target)) return;
             
@@ -1135,8 +926,8 @@
             }
             
             gameState.dragData.element = target;
-            gameState.dragData.startPos = { x: coords.x, y: coords.y };
-            createDragClone(target, coords.x, coords.y);
+            gameState.dragData.startPos = { x: touch.clientX, y: touch.clientY };
+            createDragClone(target, touch.clientX, touch.clientY);
             e.preventDefault();
         }
 
@@ -1145,9 +936,8 @@
             if (!gameState.dragData.element || !gameState.dragData.clone) return;
             
             const touch = e.touches ? e.touches[0] : e;
-            const coords = transformCoordinates(touch.clientX, touch.clientY);
-            gameState.dragData.clone.style.left = coords.x + 'px';
-            gameState.dragData.clone.style.top = coords.y + 'px';
+            gameState.dragData.clone.style.left = touch.clientX + 'px';
+            gameState.dragData.clone.style.top = touch.clientY + 'px';
             e.preventDefault();
         }
 
@@ -1159,8 +949,7 @@
             }
             
             const touch = e.changedTouches ? e.changedTouches[0] : e;
-            const coords = transformCoordinates(touch.clientX, touch.clientY);
-            const endPos = { x: coords.x, y: coords.y };
+            const endPos = { x: touch.clientX, y: touch.clientY };
             const distance = calculateDistance(gameState.dragData.startPos, endPos);
             
             if (distance > 30 && isOverThiefBag(endPos.x, endPos.y)) {
@@ -1232,7 +1021,6 @@
             
             gameState.allStolenItems[stage.key].push(item);
             
-            // 警戒度上昇
             if (gameState.alertLevel < 20) {
                 gameState.alertLevel++;
                 updateAlertLevelUI();
@@ -1243,7 +1031,6 @@
             itemSpan.textContent = item;
             stolenItems.appendChild(itemSpan);
             
-            // アイテム状態更新
             if (element.classList.contains('pedestrian-item')) {
                 element.classList.add('stolen');
             } else if (element.classList.contains('item')) {
@@ -1259,7 +1046,46 @@
             }
         }
 
-        // ゲームオーバー
+        // 結果表示
+        function showResults() {
+            document.getElementById('vegetableResults').innerHTML = 
+                gameState.allStolenItems.vegetable.length ? 
+                gameState.allStolenItems.vegetable.map(item => `<span>${item}</span>`).join('') : 
+                '<span style="color: #999;">なし</span>';
+                
+            document.getElementById('supermarketResults').innerHTML = 
+                gameState.allStolenItems.supermarket.length ? 
+                gameState.allStolenItems.supermarket.map(item => `<span>${item}</span>`).join('') : 
+                '<span style="color: #999;">なし</span>';
+                
+            document.getElementById('convenienceResults').innerHTML = 
+                gameState.allStolenItems.convenience.length ? 
+                gameState.allStolenItems.convenience.map(item => `<span>${item}</span>`).join('') : 
+                '<span style="color: #999;">なし</span>';
+            
+            const totalCount = gameState.allStolenItems.vegetable.length + 
+                             gameState.allStolenItems.supermarket.length + 
+                             gameState.allStolenItems.convenience.length;
+            
+            document.getElementById('totalCount').textContent = totalCount;
+            
+            let curryStatus = '';
+            if (totalCount >= 15) {
+                curryStatus = '🌟 完璧なカレーの材料が揃いました！';
+            } else if (totalCount >= 10) {
+                curryStatus = '😊 なかなか良いカレーが作れそうです！';
+            } else if (totalCount >= 5) {
+                curryStatus = '😅 質素なカレーになりそうです...';
+            } else {
+                curryStatus = '😱 カレーを作るには材料が足りません！';
+            }
+            
+            document.getElementById('curryStatus').textContent = curryStatus;
+            
+            showScreen('resultScreen');
+        }
+
+        // ゲームオーバー（没収処理）
         function gameOver() {
             gameState.running = false;
             clearAllTimers();
@@ -1286,47 +1112,7 @@
             }, 2000);
         }
 
-        // 結果表示
-        function showResults() {
-            document.getElementById('vegetableResults').innerHTML = 
-                gameState.allStolenItems.vegetable.length ? 
-                gameState.allStolenItems.vegetable.map(item => `<span>${item}</span>`).join('') : 
-                '<span style="color: #999;">なし</span>';
-                
-            document.getElementById('supermarketResults').innerHTML = 
-                gameState.allStolenItems.supermarket.length ? 
-                gameState.allStolenItems.supermarket.map(item => `<span>${item}</span>`).join('') : 
-                '<span style="color: #999;">なし</span>';
-                
-            document.getElementById('convenienceResults').innerHTML = 
-                gameState.allStolenItems.convenience.length ? 
-                gameState.allStolenItems.convenience.map(item => `<span>${item}</span>`).join('') : 
-                '<span style="color: #999;">なし</span>';
-            
-            const totalCount = gameState.allStolenItems.vegetable.length + 
-                             gameState.allStolenItems.supermarket.length + 
-                             gameState.allStolenItems.convenience.length;
-            
-            document.getElementById('totalCount').textContent = totalCount;
-            
-            // カレー評価
-            let curryStatus = '';
-            if (totalCount >= 15) {
-                curryStatus = '🌟 完璧なカレーの材料が揃いました！';
-            } else if (totalCount >= 10) {
-                curryStatus = '😊 なかなか良いカレーが作れそうです！';
-            } else if (totalCount >= 5) {
-                curryStatus = '😅 質素なカレーになりそうです...';
-            } else {
-                curryStatus = '😱 カレーを作るには材料が足りません！';
-            }
-            
-            document.getElementById('curryStatus').textContent = curryStatus;
-            
-            showScreen('resultScreen');
-        }
-
-        // ゲーム再開
+        // ゲーム再開（完全リセット）
         function restartGame() {
             clearAllTimers();
             removeDragClone();
@@ -1348,13 +1134,15 @@
             updateAlertLevelUI();
         }
 
-        // 初期化
+        // ゲーム開始
         setupTouchEvents();
         
+        // 初期化：スタート画面を表示
         document.addEventListener('DOMContentLoaded', function() {
             showScreen('startScreen');
         });
         
+        // ページ読み込み時に確実にスタート画面を表示
         window.addEventListener('load', function() {
             showScreen('startScreen');
         });
