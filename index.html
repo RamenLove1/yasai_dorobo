@@ -484,31 +484,31 @@
             }
         }
 
-        /* 縦画面での警告 */
+        /* 縦画面での横向き表示 */
         @media (orientation: portrait) {
-            #gameContainer::before {
-                content: "📱 画面を横向きにしてください";
-                position: absolute;
+            #gameContainer {
+                transform: rotate(90deg);
+                transform-origin: center center;
+                width: 100vh;
+                height: 100vw;
+                position: fixed;
                 top: 50%;
                 left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 20px;
-                border-radius: 10px;
-                font-size: 18px;
-                text-align: center;
-                z-index: 10000;
+                margin-top: calc(-100vw / 2);
+                margin-left: calc(-100vh / 2);
             }
             
-            .screen {
-                filter: blur(5px);
-                pointer-events: none;
+            /* タッチ座標の補正 */
+            body {
+                overflow: hidden;
+                position: fixed;
+                width: 100%;
+                height: 100%;
             }
         }
 
         /* 小さな画面での調整 */
-        @media (max-height: 400px) {
+        @media (max-height: 400px), (orientation: portrait) and (max-width: 400px) {
             #gameScreen {
                 grid-template-rows: 50px 1fr 50px;
                 gap: 5px;
@@ -534,7 +534,7 @@
         <div id="startScreen" class="screen active">
             <h1>🍛 カレー泥棒ゲーム 🍛</h1>
             <p>
-                スマホを横向きにしてプレイ！<br>
+                縦画面のままでも横向きで表示されます！<br>
                 八百屋、スーパー、コンビニを各20秒ずつ回って<br>
                 見つからないように材料を盗みましょう！
             </p>
@@ -1033,12 +1033,40 @@
             container.addEventListener('mouseup', handleTouchEnd);
         }
 
+        // 縦画面での座標変換
+        function transformCoordinates(clientX, clientY) {
+            if (window.innerHeight > window.innerWidth) {
+                // 縦画面の場合、座標を90度回転変換
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                
+                // 中心を原点とした座標に変換
+                const relativeX = clientX - centerX;
+                const relativeY = clientY - centerY;
+                
+                // 90度回転（時計回り）
+                const rotatedX = relativeY;
+                const rotatedY = -relativeX;
+                
+                // 回転後の画面サイズに合わせて調整
+                const newCenterX = window.innerHeight / 2;
+                const newCenterY = window.innerWidth / 2;
+                
+                return {
+                    x: rotatedX + newCenterX,
+                    y: rotatedY + newCenterY
+                };
+            }
+            return { x: clientX, y: clientY };
+        }
+
         // タッチ開始
         function handleTouchStart(e) {
             if (!gameState.running) return;
             
             const touch = e.touches ? e.touches[0] : e;
-            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            const coords = transformCoordinates(touch.clientX, touch.clientY);
+            const target = document.elementFromPoint(coords.x, coords.y);
             
             if (!isValidItem(target)) return;
             
@@ -1048,8 +1076,8 @@
             }
             
             gameState.dragData.element = target;
-            gameState.dragData.startPos = { x: touch.clientX, y: touch.clientY };
-            createDragClone(target, touch.clientX, touch.clientY);
+            gameState.dragData.startPos = { x: coords.x, y: coords.y };
+            createDragClone(target, coords.x, coords.y);
             e.preventDefault();
         }
 
@@ -1058,8 +1086,9 @@
             if (!gameState.dragData.element || !gameState.dragData.clone) return;
             
             const touch = e.touches ? e.touches[0] : e;
-            gameState.dragData.clone.style.left = touch.clientX + 'px';
-            gameState.dragData.clone.style.top = touch.clientY + 'px';
+            const coords = transformCoordinates(touch.clientX, touch.clientY);
+            gameState.dragData.clone.style.left = coords.x + 'px';
+            gameState.dragData.clone.style.top = coords.y + 'px';
             e.preventDefault();
         }
 
@@ -1071,7 +1100,8 @@
             }
             
             const touch = e.changedTouches ? e.changedTouches[0] : e;
-            const endPos = { x: touch.clientX, y: touch.clientY };
+            const coords = transformCoordinates(touch.clientX, touch.clientY);
+            const endPos = { x: coords.x, y: coords.y };
             const distance = calculateDistance(gameState.dragData.startPos, endPos);
             
             if (distance > 30 && isOverThiefBag(endPos.x, endPos.y)) {
